@@ -488,29 +488,80 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function ajustarTamanhoCanvas() {
+        function ajustarTamanhoCanvas() {
         if (!canvas || !canvas.parentElement) return;
+        // Ajusta o canvas para ocupar toda a área do container do disco
         canvas.width = canvas.parentElement.clientWidth;
         canvas.height = canvas.parentElement.clientHeight;
     }
 
-    function desenharVisualizer() {
+        function desenharVisualizer() {
         animationFrameId = requestAnimationFrame(desenharVisualizer);
         if (!analyserNode || !canvasCtx || !canvas) return;
+
         const bufferLength = analyserNode.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         analyserNode.getByteFrequencyData(dataArray);
+
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-        const quantidadeBarras = 16; 
-        const larguraBarra = canvas.width / quantidadeBarras; 
+
+        const quantidadeBarras = 34; // Aumentado ligeiramente para fechar bem os cantos
+        
+        // CORREÇÃO: Calcula a largura exata de cada barra para dividir o espaço total do canvas sem deixar sobras nas pontas
+        const espacamentoBarras = 1.5; 
+        const larguraBarra = (canvas.width - (espacamentoBarras * (quantidadeBarras - 1))) / quantidadeBarras;
+
+        // CORREÇÃO: O chão agora é 100% o limite inferior do Canvas (colado na borda de baixo)
+        const yBaseReto = canvas.height; 
+
         for (let i = 0; i < quantidadeBarras; i++) {
-            const valorFrequencia = dataArray[i % bufferLength];
-            const alturaBarraTotal = (valorFrequencia / 255) * canvas.height;
-            const x = i * larguraBarra;
-            canvasCtx.fillStyle = '#00d2ff';
-            canvasCtx.fillRect(x + 2, canvas.height - alturaBarraTotal, larguraBarra - 4, alturaBarraTotal);
+            // Distância em relação ao centro (0 no meio, 1 nas pontas/laterais)
+            const metade = (quantidadeBarras - 1) / 2;
+            const distanciaDoCentro = Math.abs(i - metade) / metade; 
+
+            // Mapeamento do som: Graves fortes nas pontas, médios/agudos no centro
+            const indiceMapeado = Math.floor((1 - distanciaDoCentro) * 15);
+            const valorFrequencia = dataArray[Math.max(0, Math.min(indiceMapeado, bufferLength - 1))];
+            
+            // CORREÇÃO: As laterais agora ganham teto total (1.0) para irem até o topo exato do canvas
+            const fatorCurvaTopo = 0.25 + (Math.pow(distanciaDoCentro, 2) * 0.75); 
+            const alturaMaximaBarra = canvas.height * fatorCurvaTopo;
+            
+            // Altura atual baseada no volume do som (mínimo de 8px para manter os cantos acesos no chão)
+            const alturaAtual = 8 + (valorFrequencia / 255) * alturaMaximaBarra;
+
+            // Posição X de cada coluna começando exatamente no pixel 0 da esquerda
+            const xBarra = i * (larguraBarra + espacamentoBarras);
+
+            // CONSTANTES DOS BLOQUINHOS (Segmentação)
+            const tamanhoSegmento = 3; 
+            const espacamentoVertical = 1.5; 
+            const totalSegmentos = Math.floor(alturaAtual / (tamanhoSegmento + espacamentoVertical));
+
+            // Desenha a coluna subindo bloco por bloco a partir da base colada embaixo
+            for (let j = 0; j < totalSegmentos; j++) {
+                const alturaDoBlocoAtual = j * (tamanhoSegmento + espacamentoVertical);
+                
+                // Evita que os blocos ultrapassem o teto máximo permitido para aquela barra
+                if (alturaDoBlocoAtual > alturaMaximaBarra) break;
+
+                const porcentagemAltura = alturaDoBlocoAtual / alturaMaximaBarra;
+
+                // Escala de cores: 60% Azul, 30% Amarelo, 10% Vermelho
+                if (porcentagemAltura < 0.60) {
+                    canvasCtx.fillStyle = '#00f2fe'; 
+                } else if (porcentagemAltura >= 0.60 && porcentagemAltura < 0.90) {
+                    canvasCtx.fillStyle = '#f1c40f'; 
+                } else {
+                    canvasCtx.fillStyle = '#ff3838'; 
+                }
+
+                const yBloco = yBaseReto - alturaDoBlocoAtual;
+
+                // Desenha o quadradinho do LED
+                canvasCtx.fillRect(xBarra, yBloco - tamanhoSegmento, larguraBarra, tamanhoSegmento);
+            }
         }
     }
 
-    window.addEventListener('resize', ajustarTamanhoCanvas);
 });
