@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neumorph Music Experience</title>
+        <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e2024">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+                    .catch(err => console.error('Erro ao registrar Service Worker:', err));
+            });
+        }
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+    <div class="smartphone-container">
+        <div class="app-header">
+            <button class="header-btn" onclick="document.getElementById('file-input').click()" title="Adicionar Arquivos"><i class="fa-solid fa-plus"></i></button>
+            <input type="file" id="file-input" accept=".mp3,.zip" multiple style="display: none;">
+            
+            <button class="header-btn" id="sync-folder-btn" title="Sincronizar Pasta Local" style="color: #00f2fe;"><i class="fa-solid fa-rotate"></i></button>
+            
+            <span style="font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;">MIXPLAYER</span>
+            <button class="header-btn" id="toggle-mixer-btn"><i class="fa-solid fa-sliders"></i></button>
+        </div>
+
+        <div id="page-player" class="app-page active">
+            <div class="art-wrapper">
+                <div id="disk-visual" class="vinyl-disk">
+                    <canvas id="audio-visualizer"></canvas>
+                </div>
+            </div>
+
+            <div class="track-meta">
+                <h2 id="current-track-title">Sem arquivos na agulha</h2>
+                <p id="current-folder-title">Importe músicas ou um arquivo .ZIP</p>
+            </div>
+
+            <div class="progress-container">
+                <div class="time-stamps">
+                    <span id="current-time">0:00</span>
+                    <span id="total-duration">0:00</span>
+                </div>
+                <input type="range" id="progress-slider" min="0" max="100" value="0">
+            </div>
+
+            <div id="folder-list" class="neumorphic-list"></div>
+
+            <div class="playlist-header-actions">
+                <span>SUAS PLAYLISTS</span>
+                <button id="add-playlist-btn" class="mini-action-btn" title="Criar Nova Playlist"><i class="fa-solid fa-folder-plus"></i></button>
+            </div>
+            <div id="playlist" class="neumorphic-list"></div>
+        </div>
+
+        <div id="page-mixer" class="app-page">
+            <div class="mixer-title">
+                <h3>EQUALIZADOR MASTER</h3>
+                <p>Ajuste os parâmetros de áudio em tempo real</p>
+            </div>
+            
+            <div class="mixer-board-full">
+                <div class="control-rack">
+                    <label><span><i class="fa-solid fa-volume-high"></i> VOLUME GERAL</span><span id="vol-lbl">100%</span></label>
+                    <input type="range" id="gain-slider" min="0" max="2" step="0.05" value="1">
+                </div>
+                
+                <div class="control-rack">
+                    <label><span><i class="fa-solid fa-wave-square"></i> REFORÇO DE GRAVES (BASS)</span><span id="bass-lbl">0 dB</span></label>
+                    <input type="range" id="bass-slider" min="-10" max="10" step="1" value="0">
+                </div>
+
+                <div class="control-rack">
+                    <label><span><i class="fa-solid fa-bolt"></i> BRILHO DE AGUDOS (TREBLE)</span><span id="treble-lbl">0 dB</span></label>
+                    <input type="range" id="treble-slider" min="-10" max="10" step="1" value="0">
+                </div>
+            </div>
+            
+            <button class="back-player-btn" id="back-to-player-btn">
+                <i class="fa-solid fa-arrow-left"></i> VOLTAR PARA O PLAYER
+            </button>
+        </div>
+
+        <div class="dock-controls">
+            <button class="btn-dock" id="prev-btn"><i class="fa-solid fa-backward"></i></button>
+            <button class="btn-dock main-action" id="play-pause-btn"><i class="fa-solid fa-play"></i></button>
+            <button class="btn-dock" id="next-btn"><i class="fa-solid fa-forward"></i></button>
+        </div>
+
+        <div id="playlist-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h4>Adicionar à Playlist</h4>
+                <p id="modal-track-name">Nome da Música</p>
+                
+                <div id="modal-playlists-options" class="modal-scroll-list"></div>
+                
+                <button id="close-modal-btn" class="modal-close-btn">CANCELAR</button>
+            </div>
+        </div>
+
+        <div id="new-playlist-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h4>Nova Playlist</h4>
+                <input type="text" id="new-playlist-input" placeholder="Digite o nome da playlist..." class="modal-input-field">
+                <div class="modal-actions-row">
+                    <button id="cancel-new-playlist-btn" class="modal-close-btn">CANCELAR</button>
+                    <button id="save-new-playlist-btn" class="modal-save-btn">CRIAR</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+:root {
+    --bg-app: #1a1b1f;
+    --bg-card: #1e2024;
+    --text-main: #e2e8f0;
+    --text-muted: #747d8c;
+    --gradient-primary: linear-gradient(135deg, #ff5e62, #ff9966);
+    --gradient-glow: 0 0 20px rgba(255, 94, 98, 0.4);
+    --shadow-inset: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.05);
+    --shadow-out: 5px 5px 12px rgba(0,0,0,0.6), -5px -5px 12px rgba(255,255,255,0.03);
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.smartphone-container {
+    width: 100%;
+    max-width: 390px;
+    background: var(--bg-card);
+    border-radius: 32px;
+    padding: 24px;
+    box-shadow: var(--shadow-out);
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Controle de Telas (Pages) */
+.app-page { display: none; }
+.app-page.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.header-btn {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--bg-card); border: none;
+    color: var(--text-main); box-shadow: var(--shadow-out); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.header-btn.active-tab { color: #ff5e62; box-shadow: var(--shadow-inset); }
+
+/* Visor / Display Retangular */
+.art-wrapper { display: flex; justify-content: center; margin: 25px 0; width: 100%; }
+.vinyl-disk { width: 100%; height: 180px; border-radius: 20px; background: #151619; box-shadow: var(--shadow-inset); position: relative; overflow: hidden; }
+#audio-visualizer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; pointer-events: none; }
+
+/* Meta dados e barra */
+.track-meta { text-align: center; margin-bottom: 15px; }
+.track-meta h2 { font-size: 1.2rem; margin: 0 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-meta p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+.progress-container { margin: 15px 0; padding: 0 5px; }
+.time-stamps { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+
+#progress-slider { -webkit-appearance: none; width: 100%; height: 6px; background: var(--bg-card); border-radius: 3px; box-shadow: var(--shadow-inset); outline: none; cursor: pointer; }
+#progress-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gradient-primary); box-shadow: var(--gradient-glow); cursor: pointer; }
+
+/* Listas Neumórficas */
+.neumorphic-list { background: var(--bg-card); box-shadow: var(--shadow-inset); border-radius: 18px; padding: 10px; max-height: 110px; overflow-y: auto; margin-bottom: 15px; }
+.list-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; margin-bottom: 6px; border-radius: 12px; cursor: pointer; background: var(--bg-card); font-size: 0.9rem; transition: all 0.2s; }
+.list-row:hover, .list-row.active { box-shadow: var(--shadow-out); color: #ff5e62; }
+.row-clickable-area { display: flex; align-items: center; gap: 12px; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Cabeçalho de Ações das Playlists */
+.playlist-header-actions { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 8px; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+.mini-action-btn { background: transparent; border: none; color: #ff5e62; cursor: pointer; font-size: 0.9rem; transition: transform 0.2s; }
+.mini-action-btn:hover { transform: scale(1.1); }
+
+/* Tela do Mixer */
+.mixer-title { text-align: center; margin: 20px 0; }
+.mixer-title h3 { margin: 0 0 5px 0; letter-spacing: 1px; color: #ff5e62; }
+.mixer-title p { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+.mixer-board-full { background: var(--bg-card); border-radius: 24px; padding: 20px; box-shadow: var(--shadow-out); margin-bottom: 25px; margin-top: 10px; }
+.control-rack { margin-bottom: 22px; }
+.control-rack:last-child { margin-bottom: 0; }
+.control-rack label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+.control-rack label i { color: #ff5e62; margin-right: 4px; }
+
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 8px; background: var(--bg-card); border-radius: 4px; box-shadow: var(--shadow-inset); outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--gradient-primary); box-shadow: var(--gradient-glow); cursor: pointer; }
+
+.back-player-btn { width: 100%; padding: 14px; border-radius: 15px; background: var(--bg-card); border: none; color: var(--text-main); font-weight: 600; font-size: 0.8rem; box-shadow: var(--shadow-out); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.back-player-btn:active { box-shadow: var(--shadow-inset); color: #ff5e62; }
+
+/* Comandos Base Inferiores */
+.dock-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 15px; }
+.btn-dock { width: 50px; height: 50px; border-radius: 50%; background: var(--bg-card); border: none; color: var(--text-main); box-shadow: var(--shadow-out); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-dock:active { box-shadow: var(--shadow-inset); }
+.btn-dock.main-action { width: 65px; height: 65px; background: var(--gradient-primary); color: white; box-shadow: var(--gradient-glow), var(--shadow-out); font-size: 1.4rem; }
+
+/* ESTRUTURA DOS MENUS SELETORES (MODAIS INTERNOS) */
+.modal-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 11, 13, 0.6); backdrop-filter: blur(4px);
+    z-index: 10; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+}
+.modal-overlay.open { display: flex; animation: fadeIn 0.2s ease-out; }
+
+.modal-content {
+    background: var(--bg-card); border-radius: 24px; padding: 20px; width: 100%;
+    box-shadow: var(--shadow-out); text-align: center; box-sizing: border-box;
+}
+.modal-content h4 { margin: 0 0 5px 0; color: #ff5e62; font-size: 1rem; letter-spacing: 1px; }
+.modal-content p { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 15px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.modal-scroll-list { background: var(--bg-card); box-shadow: var(--shadow-inset); border-radius: 16px; padding: 8px; max-height: 140px; overflow-y: auto; margin-bottom: 15px; }
+.modal-option-row { padding: 12px; margin-bottom: 5px; border-radius: 10px; background: var(--bg-card); text-align: left; font-size: 0.85rem; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-out); transition: all 0.2s; color: var(--text-main); }
+.modal-option-row:hover { color: #ff5e62; }
+
+.modal-close-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-card); border: none; color: var(--text-muted); font-weight: 700; font-size: 0.75rem; box-shadow: var(--shadow-out); cursor: pointer; }
+.modal-close-btn:active { box-shadow: var(--shadow-inset); }
+
+/* Campo de Input Customizado para Nova Playlist */
+.modal-input-field { width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-card); border: none; box-shadow: var(--shadow-inset); color: var(--text-main); font-family: inherit; margin-bottom: 20px; box-sizing: border-box; outline: none; }
+.modal-actions-row { display: flex; gap: 10px; }
+.modal-save-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--gradient-primary); border: none; color: white; font-weight: 700; font-size: 0.75rem; box-shadow: var(--gradient-glow); cursor: pointer; }
