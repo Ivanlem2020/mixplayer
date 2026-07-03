@@ -57,6 +57,40 @@ const newPlaylistInput = document.getElementById('new-playlist-input');
 const cancelNewPlaylistBtn = document.getElementById('cancel-new-playlist-btn');
 const saveNewPlaylistBtn = document.getElementById('save-new-playlist-btn');
 
+// ==========================================
+// BANCO DE DADOS PERSISTENTE (IndexedDB)
+// ==========================================
+
+async function carregarBibliotecaDoBanco() {
+    try {
+        if (trackTitleUi) trackTitleUi.textContent = "Carregando biblioteca...";
+        const dadosSalvos = await localforage.getItem('mixplayer_biblioteca');
+        if (dadosSalvos) {
+            biblioteca = dadosSalvos;
+            console.log("Banco de dados local carregado!");
+        }
+    } catch (err) {
+        console.error("Erro ao carregar banco de dados:", err);
+    } finally {
+        if (trackTitleUi) trackTitleUi.textContent = "Sem arquivos na agulha";
+        renderizarPastas();
+        renderizarPlaylist();
+    }
+}
+
+async function salvarBibliotecaNoBanco() {
+    try {
+        await localforage.setItem('mixplayer_biblioteca', biblioteca);
+        console.log("Banco de dados atualizado com sucesso!");
+    } catch (err) {
+        console.error("Erro ao salvar no banco de dados:", err);
+    }
+}
+
+// Inicializa o carregamento automático da memória
+carregarBibliotecaDoBanco();
+
+// Alternância de Telas
 function alternarTela(irParaMixer) {
     if (irParaMixer) {
         pagePlayer.classList.remove('active');
@@ -79,13 +113,11 @@ function inicializarAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             audioHtml = new Audio();
             
-            // CRÍTICO PARA SEGUNDO PLANO NO MOBILE
             audioHtml.preload = 'auto';
             audioHtml.controls = false;
             
             audioHtml.addEventListener('timeupdate', () => {
                 if (!userChangingProgress) atualizarProgresso();
-                // Atualiza a posição da barra nativa do sistema em segundo plano
                 atualizarMediaSessionPosition();
             });
 
@@ -127,14 +159,13 @@ function inicializarAudio() {
     }
 }
 
-// CONFIGURAÇÃO DA MEDIA SESSION (Controle em Segundo Plano e Tela de Bloqueio)
+// CONFIGURAÇÃO DA NOTIFICAÇÃO (Media Session API)
 function configurarMediaSession() {
     if ('mediaSession' in navigator && audioHtml) {
         const musicas = biblioteca[pastaAtual];
         if (!musicas || indiceMusicaAtual === -1) return;
         const musica = musicas[indiceMusicaAtual];
 
-        // Injeta os dados da música no player do Android/iOS
         navigator.mediaSession.metadata = new MediaMetadata({
             title: musica.name.replace('.mp3', ''),
             artist: 'MixPlayer App',
@@ -145,18 +176,11 @@ function configurarMediaSession() {
             ]
         });
 
-        // Vincula os botões físicos e da tela de bloqueio do celular ao app
+        // Somente as 3 teclas essenciais nativas solicitadas
         navigator.mediaSession.setActionHandler('play', () => play());
         navigator.mediaSession.setActionHandler('pause', () => pause());
         navigator.mediaSession.setActionHandler('previoustrack', () => pularMusica(-1));
         navigator.mediaSession.setActionHandler('nexttrack', () => pularMusica(1));
-        navigator.mediaSession.setActionHandler('seekto', (details) => {
-            if (details.fastSeek && 'fastSeek' in audioHtml) {
-                audioHtml.fastSeek(details.seekTime);
-                return;
-            }
-            audioHtml.currentTime = details.seekTime;
-        });
     }
 }
 
@@ -168,7 +192,7 @@ function atualizarMediaSessionPosition() {
                 playbackRate: audioHtml.playbackRate,
                 position: audioHtml.currentTime
             });
-        } catch (e) { /* Evita falhas caso os valores flutuem rapidamente */ }
+        } catch (e) { }
     }
 }
 
@@ -231,7 +255,7 @@ if (syncFolderBtn) {
     syncFolderBtn.addEventListener('click', async () => {
         if ('showDirectoryPicker' in window) {
             try {
-                if (trackTitleUi) trackTitleUi.textContent = "Aguardando seleção de pasta...";
+                if (trackTitleUi) trackTitleUi.textContent = "Aguardando pasta...";
                 const directoryHandle = await window.showDirectoryPicker();
                 if (trackTitleUi) trackTitleUi.textContent = "Varrendo músicas...";
                 const nomePastaOrigem = directoryHandle.name;
@@ -245,7 +269,7 @@ if (syncFolderBtn) {
                 if (trackTitleUi) trackTitleUi.textContent = "Sincronização concluída!";
                 renderizarPastas();
                 renderizarPlaylist();
-            } catch (err) { if (trackTitleUi) trackTitleUi.textContent = "Sincronização cancelada."; }
+            } catch (err) { if (trackTitleUi) trackTitleUi.textContent = "Cancelado."; }
         } else { alert("Navegador incompatível com varredura de diretório."); }
     });
 }
@@ -254,6 +278,8 @@ function adicionarAoBanco(pasta, nomeMusica, fileOrBlob) {
     if (!biblioteca[pasta]) biblioteca[pasta] = [];
     if (!biblioteca[pasta].some(m => m.name === nomeMusica)) biblioteca[pasta].push({ name: nomeMusica, data: fileOrBlob });
     if (!biblioteca["Todas as Músicas"].some(m => m.name === nomeMusica)) biblioteca["Todas as Músicas"].push({ name: nomeMusica, data: fileOrBlob });
+    
+    salvarBibliotecaNoBanco(); 
 }
 
 function renderizarPastas() {
@@ -345,6 +371,7 @@ function injetarMusicaNaPlaylist(nomePlaylist) {
     } else {
         biblioteca[nomePlaylist].push(musicaSelecionadaParaPlaylist);
         renderizarPastas();
+        salvarBibliotecaNoBanco();
     }
     fecharModalPlaylists();
 }
@@ -377,6 +404,7 @@ if (saveNewPlaylistBtn) {
         }
         biblioteca[nomeNovaPlaylist] = [];
         renderizarPastas();
+        salvarBibliotecaNoBanco();
         if (newPlaylistModal) newPlaylistModal.classList.remove('open');
     });
 }
@@ -385,6 +413,7 @@ function removerMusicaDaPlaylist(nomePlaylist, indexMusica) {
     biblioteca[nomePlaylist].splice(indexMusica, 1);
     renderizarPlaylist();
     renderizarPastas();
+    salvarBibliotecaNoBanco();
 }
 
 function prepararEMandarPlay(index) {
@@ -417,7 +446,7 @@ function play() {
         .then(() => {
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
         })
-        .catch(e => console.log("Aguardando interação do usuário."));
+        .catch(e => console.log("Aguardando interação."));
         
     if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
 }
@@ -520,5 +549,3 @@ function desenharVisualizer() {
 }
 
 window.addEventListener('resize', () => { if (audioCtx) ajustarTamanhoCanvas(); });
-renderizarPastas();
-renderizarPlaylist();

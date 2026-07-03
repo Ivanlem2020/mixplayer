@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neumorph Music Experience</title>
-        <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e2024">
+    <title>MixPlayer - Neumorphic Music</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1b1f">
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
-                    .catch(err => console.error('Erro ao registrar Service Worker:', err));
+                    .then(reg => console.log('Service Worker registrado!', reg))
+                    .catch(err => console.error('Erro no Service Worker:', err));
             });
         }
     </script>
-
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -102,9 +104,7 @@
             <div class="modal-content">
                 <h4>Adicionar à Playlist</h4>
                 <p id="modal-track-name">Nome da Música</p>
-                
                 <div id="modal-playlists-options" class="modal-scroll-list"></div>
-                
                 <button id="close-modal-btn" class="modal-close-btn">CANCELAR</button>
             </div>
         </div>
