@@ -19,7 +19,7 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(reg => console.log('Service Worker registrado!', reg))
-                    .catch(err => console.error('Erro no Service Worker:', err));
+                    .catch(err => console.error('Erro Service Worker:', err));
             });
         }
     </script>
@@ -28,12 +28,10 @@
 
     <div class="smartphone-container">
         <div class="app-header">
-            <button class="header-btn" onclick="document.getElementById('file-input').click()" title="Adicionar Arquivos"><i class="fa-solid fa-plus"></i></button>
+            <button class="header-btn" onclick="document.getElementById('file-input').click()" title="Adicionar Arquivos" style="color: #00f2fe;"><i class="fa-solid fa-rotate"></i></button>
             <input type="file" id="file-input" accept=".mp3,.zip" multiple style="display: none;">
             
-            <button class="header-btn" id="sync-folder-btn" title="Sincronizar Pasta Local" style="color: #00f2fe;"><i class="fa-solid fa-rotate"></i></button>
-            
-            <span style="font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;">MIXPLAYER</span>
+            <span style="font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;" id="current-folder-title">MIXPLAYER</span>
             <button class="header-btn" id="toggle-mixer-btn"><i class="fa-solid fa-sliders"></i></button>
         </div>
 
@@ -46,7 +44,6 @@
 
             <div class="track-meta">
                 <h2 id="current-track-title">Sem arquivos na agulha</h2>
-                <p id="current-folder-title">Importe músicas ou um arquivo .ZIP</p>
             </div>
 
             <div class="progress-container">
@@ -57,13 +54,15 @@
                 <input type="range" id="progress-slider" min="0" max="100" value="0">
             </div>
 
+            <div class="view-switcher-tabs" style="display: flex; margin: 10px 15px; background: #151618; padding: 5px; border-radius: 10px; gap: 5px;">
+                <button id="tab-show-folders" class="header-btn active-tab" style="flex: 1; font-size: 0.75rem; padding: 8px; border-radius: 6px;"><i class="fa-solid fa-folder"></i> Playlists</button>
+                <button id="tab-show-songs" class="header-btn" style="flex: 1; font-size: 0.75rem; padding: 8px; border-radius: 6px;"><i class="fa-solid fa-music"></i> Músicas</button>
+                <button id="add-playlist-btn" class="header-btn" style="flex: 0.5; font-size: 0.75rem; padding: 8px; border-radius: 6px; color: #00f2fe;"><i class="fa-solid fa-folder-plus"></i></button>
+            </div>
+
             <div id="folder-list" class="neumorphic-list"></div>
 
-            <div class="playlist-header-actions">
-                <span>SUAS PLAYLISTS</span>
-                <button id="add-playlist-btn" class="mini-action-btn" title="Criar Nova Playlist"><i class="fa-solid fa-folder-plus"></i></button>
-            </div>
-            <div id="playlist" class="neumorphic-list"></div>
+            <div id="playlist" class="neumorphic-list" style="display: none;"></div>
         </div>
 
         <div id="page-mixer" class="app-page">
