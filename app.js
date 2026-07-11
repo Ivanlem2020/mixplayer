@@ -120,13 +120,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (backToPlayerBtn) backToPlayerBtn.addEventListener('click', () => alternarTela(false));
 
-    function inicializarAudio() {
+        function inicializarAudio() {
         if (!audioCtx) {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 audioHtml = new Audio();
                 audioHtml.preload = 'auto';
                 
+                // CORREÇÃO: Ajuda a manter a prioridade do áudio em segundo plano
+                audioHtml.textTrackKindUserPreference = 'subtitles'; 
+
                 audioHtml.addEventListener('timeupdate', () => {
                     if (!userChangingProgress) atualizarProgresso();
                     atualizarMediaSessionPosition();
@@ -161,13 +164,22 @@ window.addEventListener('DOMContentLoaded', () => {
                 analyserNode.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
-                audioHtml.onended = () => pularMusica(1);
+                // Quando a música terminar, pula para a próxima imediatamente
+                audioHtml.onended = () => {
+                    pularMusica(1);
+                };
 
                 ajustarTamanhoCanvas();
                 desenharVisualizer();
             } catch (e) { console.error(e); }
+        } else {
+            // CORREÇÃO CRÍTICA: Se o telemóvel suspendeu o áudio com a tela bloqueada, força ele a acordar
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
     }
+
 
     function configurarMediaSession() {
         if ('mediaSession' in navigator && audioHtml) {
@@ -411,22 +423,34 @@ window.addEventListener('DOMContentLoaded', () => {
         salvarBibliotecaNoBanco();
     }
 
-    function prepararEMandarPlay(index) {
+        function prepararEMandarPlay(index) {
+        // Força a ativação ou o despertar do motor de áudio antes de carregar o arquivo
         inicializarAudio();
+        
         const musicas = biblioteca[pastaAtual];
         if (!musicas || index < 0 || index >= musicas.length) return;
+        
         if (urlMusicaAtual) URL.revokeObjectURL(urlMusicaAtual);
         indiceMusicaAtual = index;
         const musica = musicas[indiceMusicaAtual];
+        
         if (trackTitleUi) trackTitleUi.textContent = musica.name;
+        
         if (musica.data) {
             urlMusicaAtual = URL.createObjectURL(musica.data);
-            if (audioHtml) audioHtml.src = urlMusicaAtual;
+            if (audioHtml) {
+                audioHtml.src = urlMusicaAtual;
+                audioHtml.load(); // Força o carregamento imediato do arquivo na memória do sistema
+            }
         }
+        
         if (progressSlider) progressSlider.value = 0;
         renderizarPlaylist();
+        
+        // Dá o play com o sistema de áudio reativado
         play();
     }
+
 
     function play() {
         inicializarAudio();
