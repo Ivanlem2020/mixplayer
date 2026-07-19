@@ -1,5 +1,27 @@
 window.addEventListener('DOMContentLoaded', () => {
 
+    // CONEXÃO COM O BANCO DE DADOS (INDEXEDDB)
+    let db = null;
+    const requestDB = indexedDB.open('MixPlayerDB', 1);
+
+    requestDB.onupgradeneeded = (e) => {
+        const database = e.target.result;
+        if (!database.objectStoreNames.contains('musicas')) {
+            database.createObjectStore('musicas', { keyPath: 'id', autoIncrement: true });
+        }
+    };
+
+    requestDB.onsuccess = (e) => {
+        db = e.target.result;
+        // Só carrega a biblioteca depois que o banco estiver aberto com sucesso
+        carregarBibliotecaDoBanco();
+    };
+
+    requestDB.onerror = (e) => {
+        console.error('Erro ao abrir o banco de dados:', e.target.error);
+    };
+
+    // VARIÁVEIS DO MOTOR DE ÁUDIO
     let audioCtx = null;
     let audioHtml = null; 
     let sourceNode = null; 
@@ -15,12 +37,15 @@ window.addEventListener('DOMContentLoaded', () => {
     let canvasCtx = canvas ? canvas.getContext('2d') : null;
     let animationFrameId = null;
 
-    let biblioteca = { "Todas as Músicas": [] };
-    let pastaAtual = "Todas as Músicas";
+    // CONTROLE DA BIBLIOTECA
+    let biblioteca = {};
+    let pastaAtual = "";
     let indiceMusicaAtual = -1;
     let urlMusicaAtual = null; 
     let musicaSelecionadaParaPlaylist = null;
+    let modoAleatorio = false; 
 
+    // ELEMENTOS DA INTERFACE
     const playlistContainer = document.getElementById('playlist');
     const folderContainer = document.getElementById('folder-list');
     const playPauseBtn = document.getElementById('play-pause-btn');
@@ -49,7 +74,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const cancelNewPlaylistBtn = document.getElementById('cancel-new-playlist-btn');
     const saveNewPlaylistBtn = document.getElementById('save-new-playlist-btn');
 
-    // Elementos das novas Abas
     const tabShowFolders = document.getElementById('tab-show-folders');
     const tabShowSongs = document.getElementById('tab-show-songs');
 
@@ -70,22 +94,38 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function carregarBibliotecaDoBanco() {
-        try {
-            if (trackTitleUi) trackTitleUi.textContent = "Carregando biblioteca...";
-            if (typeof localforage !== 'undefined') {
-                const dadosSalvos = await localforage.getItem('mixplayer_biblioteca');
-                if (dadosSalvos) {
-                    biblioteca = dadosSalvos;
+    function carregarBibliotecaDoBanco() {
+        if (!db) return;
+        const transaction = db.transaction(['musicas'], 'readonly');
+        const store = transaction.objectStore('musicas');
+        const request = store.openCursor();
+
+        biblioteca = {}; 
+
+        request.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+                const musica = cursor.value;
+                const nomePasta = musica.pasta;
+
+                if (!biblioteca[nomePasta]) {
+                    biblioteca[nomePasta] = [];
                 }
+                biblioteca[nomePasta].push(musica);
+
+                cursor.continue();
+            } else {
+                const nomesPastas = Object.keys(biblioteca);
+                if (nomesPastas.length > 0) {
+                    if (!pastaAtual || !biblioteca[pastaAtual]) {
+                        pastaAtual = nomesPastas[0];
+                    }
+                    if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
+                }
+                renderizarPastas();
+                renderizarPlaylist();
             }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            if (trackTitleUi) trackTitleUi.textContent = "Sem arquivos na agulha";
-            renderizarPastas();
-            renderizarPlaylist();
-        }
+        };
     }
 
     async function salvarBibliotecaNoBanco() {
@@ -97,8 +137,6 @@ window.addEventListener('DOMContentLoaded', () => {
             console.error(err);
         }
     }
-
-    carregarBibliotecaDoBanco();
 
     function alternarTela(irParaMixer) {
         if (irParaMixer) {
@@ -120,14 +158,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (backToPlayerBtn) backToPlayerBtn.addEventListener('click', () => alternarTela(false));
 
-        function inicializarAudio() {
+    function inicializarAudio() {
         if (!audioCtx) {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 audioHtml = new Audio();
                 audioHtml.preload = 'auto';
-                
-                // CORREÇÃO: Ajuda a manter a prioridade do áudio em segundo plano
                 audioHtml.textTrackKindUserPreference = 'subtitles'; 
 
                 audioHtml.addEventListener('timeupdate', () => {
@@ -164,7 +200,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 analyserNode.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
-                // Quando a música terminar, pula para a próxima imediatamente
                 audioHtml.onended = () => {
                     pularMusica(1);
                 };
@@ -173,13 +208,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 desenharVisualizer();
             } catch (e) { console.error(e); }
         } else {
-            // CORREÇÃO CRÍTICA: Se o telemóvel suspendeu o áudio com a tela bloqueada, força ele a acordar
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
         }
     }
-
 
     function configurarMediaSession() {
         if ('mediaSession' in navigator && audioHtml) {
@@ -224,15 +257,39 @@ window.addEventListener('DOMContentLoaded', () => {
         fileInput.addEventListener('change', async (e) => {
             const files = e.target.files;
             if (!files.length) return;
-            if (trackTitleUi) trackTitleUi.textContent = "Carregando faixas...";
-            for (let file of files) {
-                if (file.name.toLowerCase().endsWith('.zip')) { 
-                    await carregarZip(file); 
-                } else if (file.name.toLowerCase().endsWith('.mp3')) { 
-                    adicionarAoBanco("Pasta Raiz", file.name, file); 
-                }
+            
+            if (trackTitleUi) trackTitleUi.textContent = "Carregando pasta...";
+            
+            // OBRIGATÓRIO: Substitua o bloco do 'for' dentro do fileInput.addEventListener
+for (let file of files) {
+    if (file.name.toLowerCase().endsWith('.mp3')) {
+        // Pega o caminho completo (ex: Music/Rio Negro/musica.mp3)
+        const pathParts = file.webkitRelativePath.split('/');
+        
+        let nomePasta = "Pasta Raiz";
+        
+        // Se houver mais de uma pasta (ex: Music/Rio Negro)
+        if (pathParts.length > 1) {
+            // Se a primeira pasta for "Music" ou "Musica", usamos a próxima
+            const primeiraPasta = pathParts[0].toLowerCase();
+            if (primeiraPasta === "music" || primeiraPasta === "musica") {
+                // Se tiver mais de uma, pega o nome do artista (ex: Rio Negro)
+                nomePasta = pathParts.length > 2 ? pathParts[1] : pathParts[0];
+            } else {
+                // Caso contrário, usa a primeira mesmo
+                nomePasta = pathParts[0];
             }
-            if (trackTitleUi) trackTitleUi.textContent = "Músicas prontas!";
+        }
+        
+        adicionarAoBanco(nomePasta, file.name, file);
+    } 
+    else if (file.name.toLowerCase().endsWith('.zip')) {
+        await carregarZip(file);
+    }
+}
+
+            
+            if (trackTitleUi) trackTitleUi.textContent = "Pasta importada!";
             renderizarPastas();
             renderizarPlaylist();
         });
@@ -254,18 +311,30 @@ window.addEventListener('DOMContentLoaded', () => {
         } catch (f) { console.error(f); }
     }
 
-    function adicionarAoBanco(pasta, nomeMusica, fileOrBlob) {
-        if (!biblioteca[pasta]) biblioteca[pasta] = [];
-        if (!biblioteca[pasta].some(m => m.name === nomeMusica)) biblioteca[pasta].push({ name: nomeMusica, data: fileOrBlob });
-        if (!biblioteca["Todas as Músicas"].some(m => m.name === nomeMusica)) biblioteca["Todas as Músicas"].push({ name: nomeMusica, data: fileOrBlob });
-        salvarBibliotecaNoBanco(); 
-    }
+    function adicionarAoBanco(nomePasta, nomeMusica, arquivoData) {
+        if (!db) return;
+        const transaction = db.transaction(['musicas'], 'readwrite');
+        const store = transaction.objectStore('musicas');
 
-    function renderizarPastas() {
+        const novaMusica = {
+            pasta: nomePasta,
+            name: nomeMusica,
+            data: arquivoData
+        };
+
+        store.add(novaMusica);
+
+        if (!biblioteca[nomePasta]) {
+            biblioteca[nomePasta] = [];
+        }
+        biblioteca[nomePasta].push(novaMusica);
+    }
+    
+        function renderizarPastas() {
         if (!folderContainer) return;
         folderContainer.innerHTML = '';
         Object.keys(biblioteca).forEach(nomePasta => {
-            if (biblioteca[nomePasta].length === 0 && nomePasta !== "Todas as Músicas") return;
+            if (biblioteca[nomePasta].length === 0) return;
             
             const div = document.createElement('div');
             div.className = `list-row ${pastaAtual === nomePasta ? 'active' : ''}`;
@@ -275,40 +344,60 @@ window.addEventListener('DOMContentLoaded', () => {
             clickArea.style.display = 'flex';
             clickArea.style.alignItems = 'center';
             clickArea.style.flex = '1';
-            clickArea.innerHTML = `<i class="fa-solid ${nomePasta === 'Todas as Músicas' || nomePasta === 'Pasta Raiz' ? 'fa-folder-open' : 'fa-list-ul'}" style="margin-right:8px;"></i> <span>${nomePasta} (${biblioteca[nomePasta].length})</span>`;
+            clickArea.style.overflow = 'hidden';
+            
+            if (pastaAtual === nomePasta) {
+                clickArea.style.color = '#2ed573'; 
+                clickArea.style.fontWeight = 'bold';
+                
+                // CORREÇÃO: Texto duplicado para o efeito de repetição infinita sem espaço em branco
+                const textoExibicao = `${nomePasta} (${biblioteca[nomePasta].length})`;
+                clickArea.innerHTML = `
+                    <i class="fa-solid fa-folder-open" style="margin-right:8px; color: #2ed573; z-index: 2; background: inherit; padding-right: 4px;"></i> 
+                    <div class="marquee-container">
+                        <span class="marquee-text">${textoExibicao}</span>
+                        <span class="marquee-text">${textoExibicao}</span>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            } else {
+                clickArea.innerHTML = `<i class="fa-solid fa-list-ul" style="margin-right:8px;"></i> <span>${nomePasta} (${biblioteca[nomePasta].length})</span>`;
+            }
             
             clickArea.onclick = () => {
                 pastaAtual = nomePasta;
                 indiceMusicaAtual = -1;
                 if (folderTitleUi) folderTitleUi.textContent = pastaAtual;
-                renderizarPastas();
+                renderizarPastas(); 
                 renderizarPlaylist();
-                
                 if (tabShowSongs) tabShowSongs.click();
             };
             div.appendChild(clickArea);
 
-            if (nomePasta !== "Todas as Músicas" && nomePasta !== "Pasta Raiz") {
-                const deletePlaylistBtn = document.createElement('button');
-                deletePlaylistBtn.className = 'mini-action-btn';
-                deletePlaylistBtn.innerHTML = `<i class="fa-solid fa-trash" style="color: #ff5e62;"></i>`;
-                deletePlaylistBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (confirm(`Excluir a playlist "${nomePasta}"?`)) {
-                        delete biblioteca[nomePasta];
-                        pastaAtual = "Todas as Músicas";
-                        if (folderTitleUi) folderTitleUi.textContent = pastaAtual;
-                        renderizarPastas();
-                        renderizarPlaylist();
-                        salvarBibliotecaNoBanco();
-                    }
-                };
-                div.appendChild(deletePlaylistBtn);
-            }
+            const deletePlaylistBtn = document.createElement('button');
+            deletePlaylistBtn.className = 'mini-action-btn';
+            deletePlaylistBtn.innerHTML = `<i class="fa-solid fa-trash" style="color: #ff5e62;"></i>`;
+            deletePlaylistBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`Excluir a playlist "${nomePasta}"?`)) {
+                    delete biblioteca[nomePasta];
+                    const restantes = Object.keys(biblioteca);
+                    pastaAtual = restantes.length > 0 ? restantes[0] : "";
+                    if (folderTitleUi) folderTitleUi.textContent = pastaAtual;
+                    renderizarPastas();
+                    renderizarPlaylist();
+                    salvarBibliotecaNoBanco();
+                }
+            };
+            div.appendChild(deletePlaylistBtn);
 
             folderContainer.appendChild(div);
         });
     }
+
 
     function renderizarPlaylist() {
         if (!playlistContainer) return;
@@ -328,93 +417,26 @@ window.addEventListener('DOMContentLoaded', () => {
             clickArea.onclick = () => prepararEMandarPlay(index);
             div.appendChild(clickArea);
 
-            if (pastaAtual !== "Todas as Músicas" && pastaAtual !== "Pasta Raiz") {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'mini-action-btn';
-                deleteBtn.innerHTML = `<i class="fa-solid fa-xmark" style="color: #747d8c;"></i>`;
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    removerMusicaDaPlaylist(pastaAtual, index);
-                };
-                div.appendChild(deleteBtn);
-            } else {
-                const addBtn = document.createElement('button');
-                addBtn.className = 'mini-action-btn';
-                addBtn.innerHTML = `<i class="fa-solid fa-circle-plus"></i>`;
-                addBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    abrirModalPlaylists(musica);
-                };
-                div.appendChild(addBtn);
+            // ADICIONADO: Se for a música tocando agora, rola a lista até ela
+            if (indiceMusicaAtual === index) {
+                setTimeout(() => {
+                    div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
             }
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'mini-action-btn';
+            deleteBtn.innerHTML = `<i class="fa-solid fa-xmark" style="color: #747d8c;"></i>`;
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                removerMusicaDaPlaylist(pastaAtual, index);
+            };
+            div.appendChild(deleteBtn);
+
             playlistContainer.appendChild(div);
         });
     }
 
-    function abrirModalPlaylists(musica) {
-        musicaSelecionadaParaPlaylist = musica;
-        if (modalTrackName) modalTrackName.textContent = musica.name;
-        if (modalPlaylistsOptions) modalPlaylistsOptions.innerHTML = '';
-        const playlistsDisponiveis = Object.keys(biblioteca).filter(p => p !== "Todas as Músicas" && p !== "Pasta Raiz");
-
-        if (playlistsDisponiveis.length === 0) {
-            if (modalPlaylistsOptions) modalPlaylistsOptions.innerHTML = '<div style="padding:15px; font-size:0.8rem; color:#747d8c;">Crie uma playlist no botão (+) das abas.</div>';
-        } else {
-            playlistsDisponiveis.forEach(nomePlaylist => {
-                const row = document.createElement('div');
-                row.className = 'modal-option-row';
-                row.innerHTML = `<i class="fa-solid fa-list-ul" style="color:#ff5e62; margin-right:10px;"></i> ${nomePlaylist}`;
-                row.onclick = () => injetarMusicaNaPlaylist(nomePlaylist);
-                if (modalPlaylistsOptions) modalPlaylistsOptions.appendChild(row);
-            });
-        }
-        if (playlistModal) playlistModal.classList.add('open');
-    }
-
-    function injetarMusicaNaPlaylist(nomePlaylist) {
-        if (!musicaSelecionadaParaPlaylist) return;
-        if (biblioteca[nomePlaylist].some(m => m.name === musicaSelecionadaParaPlaylist.name)) {
-            alert("A música já está nesta playlist!");
-        } else {
-            biblioteca[nomePlaylist].push(musicaSelecionadaParaPlaylist);
-            renderizarPastas();
-            salvarBibliotecaNoBanco();
-        }
-        fecharModalPlaylists();
-    }
-
-    function fecharModalPlaylists() {
-        if (playlistModal) playlistModal.classList.remove('open');
-        musicaSelecionadaParaPlaylist = null;
-    }
-    if (closeModalBtn) closeModalBtn.addEventListener('click', fecharModalPlaylists);
-
-    if (addPlaylistBtn) {
-        addPlaylistBtn.addEventListener('click', () => {
-            if (newPlaylistInput) newPlaylistInput.value = '';
-            if (newPlaylistModal) newPlaylistModal.classList.add('open');
-        });
-    }
-    if (cancelNewPlaylistBtn) {
-        cancelNewPlaylistBtn.addEventListener('click', () => {
-            if (newPlaylistModal) newPlaylistModal.classList.remove('open');
-        });
-    }
-    if (saveNewPlaylistBtn) {
-        saveNewPlaylistBtn.addEventListener('click', () => {
-            if (!newPlaylistInput) return;
-            const nomeNovaPlaylist = newPlaylistInput.value.trim();
-            if (nomeNovaPlaylist === "") return;
-            if (biblioteca[nomeNovaPlaylist]) {
-                alert("Essa playlist já existe!");
-                return;
-            }
-            biblioteca[nomeNovaPlaylist] = [];
-            renderizarPastas();
-            salvarBibliotecaNoBanco();
-            if (newPlaylistModal) newPlaylistModal.classList.remove('open');
-        });
-    }
 
     function removerMusicaDaPlaylist(nomePlaylist, indexMusica) {
         biblioteca[nomePlaylist].splice(indexMusica, 1);
@@ -423,8 +445,7 @@ window.addEventListener('DOMContentLoaded', () => {
         salvarBibliotecaNoBanco();
     }
 
-        function prepararEMandarPlay(index) {
-        // Força a ativação ou o despertar do motor de áudio antes de carregar o arquivo
+    function prepararEMandarPlay(index) {
         inicializarAudio();
         
         const musicas = biblioteca[pastaAtual];
@@ -440,17 +461,14 @@ window.addEventListener('DOMContentLoaded', () => {
             urlMusicaAtual = URL.createObjectURL(musica.data);
             if (audioHtml) {
                 audioHtml.src = urlMusicaAtual;
-                audioHtml.load(); // Força o carregamento imediato do arquivo na memória do sistema
+                audioHtml.load(); 
             }
         }
         
         if (progressSlider) progressSlider.value = 0;
         renderizarPlaylist();
-        
-        // Dá o play com o sistema de áudio reativado
         play();
     }
-
 
     function play() {
         inicializarAudio();
@@ -472,15 +490,103 @@ window.addEventListener('DOMContentLoaded', () => {
     function pularMusica(direcao) {
         const musicas = biblioteca[pastaAtual];
         if (!musicas || musicas.length === 0) return;
+
+        if (modoAleatorio && direcao === 1) {
+            const novoIndice = Math.floor(Math.random() * musicas.length);
+            prepararEMandarPlay(novoIndice);
+            return;
+        }
+
         let novoIndice = indiceMusicaAtual + direcao;
-        if (novoIndice >= musicas.length) novoIndice = 0;
-        if (novoIndice < 0) novoIndice = musicas.length - 1;
+
+        if (novoIndice >= musicas.length) {
+            pularParaProximaPasta(); 
+            return;
+        } 
+        else if (novoIndice < 0) {
+            novoIndice = musicas.length - 1; 
+        }
+
         prepararEMandarPlay(novoIndice);
+    }
+
+    function pularParaProximaPasta() {
+        const nomesPastas = Object.keys(biblioteca);
+        if (nomesPastas.length <= 1) {
+            prepararEMandarPlay(0);
+            return;
+        }
+
+        let indicePastaAtual = nomesPastas.indexOf(pastaAtual);
+        let proximoIndicePasta = indicePastaAtual + 1;
+
+        if (proximoIndicePasta >= nomesPastas.length) {
+            proximoIndicePasta = 0;
+        }
+
+        pastaAtual = nomesPastas[proximoIndicePasta];
+        if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
+        // ADICIONADO: Atualiza a lista visual para pintar a nova pasta de verde
+        renderizarPastas();
+        prepararEMandarPlay(0);
+    }
+
+    function voltarParaPastaAnterior() {
+        const nomesPastas = Object.keys(biblioteca);
+        if (nomesPastas.length <= 1) {
+            prepararEMandarPlay(0);
+            return;
+        }
+
+        let indicePastaAtual = nomesPastas.indexOf(pastaAtual);
+        let proximoIndicePasta = indicePastaAtual - 1;
+
+        if (proximoIndicePasta < 0) {
+            proximoIndicePasta = nomesPastas.length - 1;
+        }
+
+        pastaAtual = nomesPastas[proximoIndicePasta];
+        if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
+        // ADICIONADO: Atualiza a lista visual para pintar a nova pasta de verde
+        renderizarPastas();
+        prepararEMandarPlay(0);
+    }
+
+    const shuffleBtn = document.getElementById('shuffle-btn');
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', () => {
+            modoAleatorio = !modoAleatorio;
+            if (modoAleatorio) {
+                shuffleBtn.style.color = '#00f2fe'; 
+            } else {
+                shuffleBtn.style.color = '#fff'; 
+            }
+        });
+    }
+
+    const nextFolderBtn = document.getElementById('next-folder-btn');
+    if (nextFolderBtn) {
+        nextFolderBtn.addEventListener('click', () => {
+            pularParaProximaPasta();
+            const corOriginal = nextFolderBtn.style.color;
+            nextFolderBtn.style.color = '#00f2fe';
+            setTimeout(() => { nextFolderBtn.style.color = corOriginal; }, 200);
+        });
+    }
+    
+    const prevFolderBtn = document.getElementById('prev-folder-btn');
+    if (prevFolderBtn) {
+        prevFolderBtn.addEventListener('click', () => {
+            voltarParaPastaAnterior();
+            const corOriginal = prevFolderBtn.style.color;
+            prevFolderBtn.style.color = '#00f2fe';
+            setTimeout(() => { prevFolderBtn.style.color = corOriginal; }, 200);
+        });
     }
 
     if (playPauseBtn) {
         playPauseBtn.addEventListener('click', () => {
-            if (indiceMusicaAtual === -1 && biblioteca[pastaAtual].length > 0) { prepararEMandarPlay(0); } 
+            if (indiceMusicaAtual === -1 && biblioteca[pastaAtual] && biblioteca[pastaAtual].length > 0) { prepararEMandarPlay(0); } 
             else if (audioHtml && !audioHtml.paused) { pause(); } 
             else { play(); }
         });
@@ -512,14 +618,13 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-        function ajustarTamanhoCanvas() {
+    function ajustarTamanhoCanvas() {
         if (!canvas || !canvas.parentElement) return;
-        // Ajusta o canvas para ocupar toda a área do container do disco
         canvas.width = canvas.parentElement.clientWidth;
         canvas.height = canvas.parentElement.clientHeight;
     }
 
-        function desenharVisualizer() {
+    function desenharVisualizer() {
         animationFrameId = requestAnimationFrame(desenharVisualizer);
         if (!analyserNode || !canvasCtx || !canvas) return;
 
@@ -529,49 +634,33 @@ window.addEventListener('DOMContentLoaded', () => {
 
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const quantidadeBarras = 34; // Aumentado ligeiramente para fechar bem os cantos
-        
-        // CORREÇÃO: Calcula a largura exata de cada barra para dividir o espaço total do canvas sem deixar sobras nas pontas
+        const quantidadeBarras = 34; 
         const espacamentoBarras = 1.5; 
         const larguraBarra = (canvas.width - (espacamentoBarras * (quantidadeBarras - 1))) / quantidadeBarras;
-
-        // CORREÇÃO: O chão agora é 100% o limite inferior do Canvas (colado na borda de baixo)
         const yBaseReto = canvas.height; 
 
         for (let i = 0; i < quantidadeBarras; i++) {
-            // Distância em relação ao centro (0 no meio, 1 nas pontas/laterais)
             const metade = (quantidadeBarras - 1) / 2;
             const distanciaDoCentro = Math.abs(i - metade) / metade; 
 
-            // Mapeamento do som: Graves fortes nas pontas, médios/agudos no centro
             const indiceMapeado = Math.floor((1 - distanciaDoCentro) * 15);
             const valorFrequencia = dataArray[Math.max(0, Math.min(indiceMapeado, bufferLength - 1))];
             
-            // CORREÇÃO: As laterais agora ganham teto total (1.0) para irem até o topo exato do canvas
             const fatorCurvaTopo = 0.25 + (Math.pow(distanciaDoCentro, 2) * 0.75); 
             const alturaMaximaBarra = canvas.height * fatorCurvaTopo;
-            
-            // Altura atual baseada no volume do som (mínimo de 8px para manter os cantos acesos no chão)
             const alturaAtual = 8 + (valorFrequencia / 255) * alturaMaximaBarra;
 
-            // Posição X de cada coluna começando exatamente no pixel 0 da esquerda
             const xBarra = i * (larguraBarra + espacamentoBarras);
-
-            // CONSTANTES DOS BLOQUINHOS (Segmentação)
             const tamanhoSegmento = 3; 
             const espacamentoVertical = 1.5; 
             const totalSegmentos = Math.floor(alturaAtual / (tamanhoSegmento + espacamentoVertical));
 
-            // Desenha a coluna subindo bloco por bloco a partir da base colada embaixo
             for (let j = 0; j < totalSegmentos; j++) {
                 const alturaDoBlocoAtual = j * (tamanhoSegmento + espacamentoVertical);
-                
-                // Evita que os blocos ultrapassem o teto máximo permitido para aquela barra
                 if (alturaDoBlocoAtual > alturaMaximaBarra) break;
 
                 const porcentagemAltura = alturaDoBlocoAtual / alturaMaximaBarra;
 
-                // Escala de cores: 60% Azul, 30% Amarelo, 10% Vermelho
                 if (porcentagemAltura < 0.60) {
                     canvasCtx.fillStyle = '#00f2fe'; 
                 } else if (porcentagemAltura >= 0.60 && porcentagemAltura < 0.90) {
@@ -581,11 +670,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const yBloco = yBaseReto - alturaDoBlocoAtual;
-
-                // Desenha o quadradinho do LED
                 canvasCtx.fillRect(xBarra, yBloco - tamanhoSegmento, larguraBarra, tamanhoSegmento);
             }
         }
     }
-
 });

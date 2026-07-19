@@ -29,7 +29,9 @@
     <div class="smartphone-container">
         <div class="app-header">
             <button class="header-btn" onclick="document.getElementById('file-input').click()" title="Adicionar Arquivos" style="color: #00f2fe;"><i class="fa-solid fa-rotate"></i></button>
-            <input type="file" id="file-input" accept=".mp3,.zip" multiple style="display: none;">
+            <!-- Substitua a linha do input antigo por esta: -->
+          <input type="file" id="file-input" webkitdirectory directory multiple style="display: none;">
+
             
             <span style="font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;" id="current-folder-title">MIXPLAYER</span>
             <button class="header-btn" id="toggle-mixer-btn"><i class="fa-solid fa-sliders"></i></button>
@@ -93,11 +95,16 @@
             </button>
         </div>
 
-        <div class="dock-controls">
-            <button class="btn-dock" id="prev-btn"><i class="fa-solid fa-backward"></i></button>
-            <button class="btn-dock main-action" id="play-pause-btn"><i class="fa-solid fa-play"></i></button>
-            <button class="btn-dock" id="next-btn"><i class="fa-solid fa-forward"></i></button>
-        </div>
+<!-- Substitua a div dock-controls por esta: -->
+<div class="dock-controls">
+    <button class="btn-dock" id="prev-folder-btn" title="Voltar Pasta" style="color: #fff; font-size: 0.9rem;"><i class="fa-solid fa-folder-minus"></i></button>
+    <button class="btn-dock" id="shuffle-btn" title="Modo Aleatório" style="color: #fff; font-size: 0.9rem;"><i class="fa-solid fa-shuffle"></i></button>
+    <button class="btn-dock" id="prev-btn"><i class="fa-solid fa-backward"></i></button>
+    <button class="btn-dock main-action" id="play-pause-btn"><i class="fa-solid fa-play"></i></button>
+    <button class="btn-dock" id="next-btn"><i class="fa-solid fa-forward"></i></button>
+    <button class="btn-dock" id="next-folder-btn" title="Próxima Pasta" style="color: #fff; font-size: 0.9rem;"><i class="fa-solid fa-folder-plus"></i></button>
+</div>
+
 
         <div id="playlist-modal" class="modal-overlay">
             <div class="modal-content">

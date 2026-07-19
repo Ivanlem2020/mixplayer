@@ -124,3 +124,28 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
 .modal-input-field { width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-card); border: none; box-shadow: var(--shadow-inset); color: var(--text-main); font-family: inherit; margin-bottom: 20px; box-sizing: border-box; outline: none; }
 .modal-actions-row { display: flex; gap: 10px; }
 .modal-save-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--gradient-primary); border: none; color: white; font-weight: 700; font-size: 0.75rem; box-shadow: var(--gradient-glow); cursor: pointer; }
+
+/* Container que esconde o que passa dos limites da linha */
+.marquee-container {
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    width: 100%;
+}
+
+/* O texto que vai se mover. Usamos duas cópias idênticas andando juntas */
+.marquee-text {
+    display: inline-block;
+    padding-right: 50px; /* Espaço sutil entre o fim do nome e o reinício dele */
+    animation: scroll-right-to-left 10s linear infinite;
+}
+
+/* Animação que desloca exatamente metade (uma cópia) e reseta sem dar tranco */
+@keyframes scroll-right-to-left {
+    0% {
+        transform: translate3d(0, 0, 0);
+    }
+    100% {
+        transform: translate3d(-100%, 0, 0);
+    }
+}
