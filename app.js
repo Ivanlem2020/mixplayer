@@ -1,34 +1,64 @@
 
 // ==========================================
-// REGISTRO DO SERVICE WORKER E AUTO-UPDATE
+// REGISTRO DO SERVICE WORKER E CONTROLE DE MODAL
 // ==========================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
         .then((reg) => {
-            // Se já tiver uma atualização esperando, força o refresh
+            // Se já houver uma atualização esperando na fila, chama o modal
             if (reg.waiting) {
-                fecharCacheERefrescar();
+                verificarExibicaoModal();
             }
 
-            // Fica vigiando se o GitHub mandou uma versão nova do sw.js
+            // Escuta se uma nova atualização terminar de baixar
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        fecharCacheERefrescar();
+                        verificarExibicaoModal();
                     }
                 });
             });
         }).catch(err => console.log("Erro ao registrar SW:", err));
 
-    // Evita que a página fique recarregando em loop infinito
-    let atualizando = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (atualizando) return;
-        atualizando = true;
-        window.location.reload();
-    });
+    // REMOVIDO: Tiramos o recarregamento automático automático daqui para não fechar o modal sozinho!
 }
+
+// Função que checa se já se passaram 24 horas desde a última vez que o usuário adiou
+function verificarExibicaoModal() {
+    const ultimaExibicao = localStorage.getItem('mixplayer_ultimo_aviso_update');
+    const agora = Date.now();
+    const umDiaEmMilissegundos = 24 * 60 * 60 * 1000;
+
+    // Se nunca foi adiado OU se já passou mais de 1 dia (24h), mostra o modal
+    if (!ultimaExibicao || (agora - ultimaExibicao > umDiaEmMilissegundos)) {
+        exibirModalAtualizacao();
+    }
+}
+
+function exibirModalAtualizacao() {
+    const modal = document.getElementById('modal-atualizacao');
+    const btnAtualizar = document.getElementById('btn-atualizar-app');
+    const btnDepois = document.getElementById('btn-atualizar-depois');
+    
+    if (modal && btnAtualizar && btnDepois) {
+        modal.style.display = 'flex'; // Fixa o modal na tela
+        
+        // Se clicar em Atualizar: Recarrega a página aplicando tudo novo
+        btnAtualizar.onclick = function() {
+            localStorage.removeItem('mixplayer_ultimo_aviso_update'); // Limpa o timer
+            window.location.reload();
+        };
+
+        // Se clicar em Depois: Esconde o modal e guarda a data de hoje para só incomodar amanhã
+        btnDepois.onclick = function() {
+            modal.style.display = 'none';
+            localStorage.setItem('mixplayer_ultimo_aviso_update', Date.now());
+        };
+    }
+}
+// ==========================================
+
 
 function fecharCacheERefrescar() {
     // Pega o modal que criamos no HTML
