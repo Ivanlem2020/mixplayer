@@ -135,10 +135,12 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
 
 /* O texto que vai se mover. Usamos duas cópias idênticas andando juntas */
 .marquee-text {
-    display: inline-block;
-    padding-right: 50px; /* Espaço sutil entre o fim do nome e o reinício dele */
-    animation: scroll-right-to-left 10s linear infinite;
+    /* ... seus outros estilos (display, white-space, etc) ... */
+    
+    /* Esta linha é o segredo: faz o letreiro começar parado */
+    animation-play-state: paused; 
 }
+
 
 /* Animação que desloca exatamente metade (uma cópia) e reseta sem dar tranco */
 @keyframes scroll-right-to-left {
