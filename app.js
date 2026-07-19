@@ -1,3 +1,43 @@
+
+// ==========================================
+// REGISTRO DO SERVICE WORKER E AUTO-UPDATE
+// ==========================================
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+            // Se já tiver uma atualização esperando, força o refresh
+            if (reg.waiting) {
+                fecharCacheERefrescar();
+            }
+
+            // Fica vigiando se o GitHub mandou uma versão nova do sw.js
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        fecharCacheERefrescar();
+                    }
+                });
+            });
+        }).catch(err => console.log("Erro ao registrar SW:", err));
+
+    // Evita que a página fique recarregando em loop infinito
+    let atualizando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (atualizando) return;
+        atualizando = true;
+        window.location.reload();
+    });
+}
+
+function fecharCacheERefrescar() {
+    alert("Nova atualização encontrada! O aplicativo será reiniciado para aplicar as melhorias.");
+    window.location.reload();
+}
+// ==========================================
+
+
+
 window.addEventListener('DOMContentLoaded', () => {
 
     // CONEXÃO COM O BANCO DE DADOS (INDEXEDDB)
@@ -470,7 +510,28 @@ for (let file of files) {
         play();
     }
 
-    function play() {
+        function play() {
+        // CORREÇÃO: Se não houver pasta ou música selecionada, puxa a primeira automaticamente
+        if (!pastaAtual || pastaAtual === "") {
+            const pastas = Object.keys(biblioteca);
+            if (pastas.length > 0) {
+                pastaAtual = pastas[0];
+                indiceMusicaAtual = 0;
+                if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
+                
+                renderizarPastas();
+                renderizarPlaylist();
+                prepararEMandarPlay(0);
+                return; // Interrompe aqui porque o prepararEMandarPlay já vai dar o play
+            }
+        } else if (indiceMusicaAtual === -1) {
+            const musicas = biblioteca[pastaAtual];
+            if (musicas && musicas.length > 0) {
+                prepararEMandarPlay(0);
+                return; // Interrompe aqui porque o prepararEMandarPlay já vai dar o play
+            }
+        }
+
         inicializarAudio();
         if (!audioHtml) return;
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -487,6 +548,7 @@ for (let file of files) {
         if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
     }
 
+    
     function pularMusica(direcao) {
         const musicas = biblioteca[pastaAtual];
         if (!musicas || musicas.length === 0) return;
