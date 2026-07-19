@@ -1,5 +1,4 @@
-const CACHE_NAME = 'mixplayer-v1';
-// Lista de arquivos que o app vai salvar para funcionar offline
+const CACHE_NAME = 'mixplayer-v2'; // Altere esse número (v2, v3, v4...) sempre que atualizar o app no GitHub
 const ASSETS = [
   './',
   './index.html',
@@ -10,31 +9,35 @@ const ASSETS = [
   './icon-512.png'
 ];
 
-// Instala o Service Worker e salva os arquivos no cache
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
+    }).then(() => {
+      // Força o novo service worker a chutar o antigo e se instalar imediatamente
+      return self.skipWaiting();
     })
   );
 });
 
-// Ativa o Service Worker e limpa caches antigos, se houver
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('Removendo cache antigo:', key);
             return caches.delete(key);
           }
         })
       );
+    }).then(() => {
+      // Faz o app passar a usar os arquivos novos na mesma hora
+      return self.clients.claim();
     })
   );
 });
 
-// Serve os arquivos direto do cache quando estiver offline
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
