@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mixplayer-v1'; // Altere esse número (v2, v3, v4...) sempre que atualizar o app no GitHub
+const CACHE_NAME = 'mixplayer-v1.0'; // Altere esse número (v2, v3, v4...) sempre que atualizar o app no GitHub
 const ASSETS = [
   './',
   './index.html',
