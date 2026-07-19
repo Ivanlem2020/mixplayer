@@ -31,9 +31,24 @@ if ('serviceWorker' in navigator) {
 }
 
 function fecharCacheERefrescar() {
-    alert("Nova atualização encontrada! O aplicativo será reiniciado para aplicar as melhorias.");
-    window.location.reload();
+    // Pega o modal que criamos no HTML
+    const modal = document.getElementById('modal-atualizacao');
+    const btnAtualizar = document.getElementById('btn-atualizar-app');
+    
+    if (modal && btnAtualizar) {
+        // Mostra o modal bonito na tela
+        modal.style.display = 'flex';
+        
+        // Quando clicar no botão "Atualizar Agora", a página recarrega com o código novo
+        btnAtualizar.onclick = function() {
+            window.location.reload();
+        };
+    } else {
+        // Caso o HTML não tenha carregado a tempo, recarrega direto
+        window.location.reload();
+    }
 }
+
 // ==========================================
 
 
