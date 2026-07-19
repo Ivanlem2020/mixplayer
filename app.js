@@ -794,3 +794,57 @@ for (let file of files) {
         }
     }
 });
+
+// ==========================================
+// CAPTURA E EXIBIÇÃO DO POPUP DE INSTALAÇÃO
+// ==========================================
+let eventoInstalacao = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Impede que o navegador mostre aquela barra padrão feia lá embaixo
+    e.preventDefault();
+    // Salva o evento para usarmos quando o usuário clicar no botão
+    eventoInstalacao = e;
+
+    // Checa se o usuário já recusou a instalação nas últimas 24 horas
+    const ultimaRecusa = localStorage.getItem('mixplayer_recusa_instalacao');
+    const agora = Date.now();
+    const umDiaEmMilissegundos = 24 * 60 * 60 * 1000;
+
+    if (!ultimaRecusa || (agora - ultimaRecusa > umDiaEmMilissegundos)) {
+        exibirModalInstalacao();
+    }
+});
+
+function exibirModalInstalacao() {
+    const modalInstalar = document.getElementById('modal-instalacao');
+    const btnInstalar = document.getElementById('btn-instalar-app');
+    const btnDepoisInstalar = document.getElementById('btn-instalar-depois');
+
+    if (modalInstalar && btnInstalar && btnDepoisInstalar) {
+        modalInstalar.style.display = 'flex';
+
+        // Clique no botão "Instalar Agora"
+        btnInstalar.onclick = () => {
+            modalInstalar.style.display = 'none';
+            if (eventoInstalacao) {
+                // Dispara o prompt oficial do sistema (Android/Chrome)
+                eventoInstalacao.prompt();
+                eventoInstalacao.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuário aceitou instalar o MixPlayer!');
+                    }
+                    eventoInstalacao = null;
+                });
+            }
+        };
+
+        // Clique no botão "Agora não"
+        btnDepoisInstalar.onclick = () => {
+            modalInstalar.style.display = 'none';
+            // Salva o momento para ocultar por 24 horas
+            localStorage.setItem('mixplayer_recusa_instalacao', Date.now());
+        };
+    }
+}
+
