@@ -509,36 +509,42 @@ for (let file of files) {
         renderizarPlaylist();
         play();
     }
-
+    
         function play() {
-        // CORREÇÃO: Se não houver pasta ou música selecionada, puxa a primeira automaticamente
         if (!pastaAtual || pastaAtual === "") {
             const pastas = Object.keys(biblioteca);
             if (pastas.length > 0) {
                 pastaAtual = pastas[0];
                 indiceMusicaAtual = 0;
                 if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
-                
                 renderizarPastas();
                 renderizarPlaylist();
                 prepararEMandarPlay(0);
-                return; // Interrompe aqui porque o prepararEMandarPlay já vai dar o play
+                return;
             }
         } else if (indiceMusicaAtual === -1) {
             const musicas = biblioteca[pastaAtual];
             if (musicas && musicas.length > 0) {
                 prepararEMandarPlay(0);
-                return; // Interrompe aqui porque o prepararEMandarPlay já vai dar o play
+                return;
             }
         }
 
         inicializarAudio();
         if (!audioHtml) return;
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        
         audioHtml.play().then(() => {
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
         }).catch(() => {});
+        
         if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+        
+        // CORREÇÃO: Pega TODAS as cópias do texto e faz andar
+        const marquees = document.querySelectorAll('.marquee-text');
+        marquees.forEach(marquee => {
+            marquee.style.animationPlayState = 'running';
+        });
     }
 
     function pause() {
@@ -546,6 +552,12 @@ for (let file of files) {
         audioHtml.pause();
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
         if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+        
+        // CORREÇÃO: Pega TODAS as cópias do texto e congela juntas
+        const marquees = document.querySelectorAll('.marquee-text');
+        marquees.forEach(marquee => {
+            marquee.style.animationPlayState = 'paused';
+        });
     }
 
     
