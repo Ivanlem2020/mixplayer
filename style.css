@@ -135,15 +135,19 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
 
 /* O texto que vai se mover. Usamos duas cópias idênticas andando juntas */
 .marquee-text {
-    /* ... seus outros estilos (display, white-space, etc) ... */
+    display: inline-block;
+    white-space: nowrap;
+    padding-right: 2rem;
+    
+    /* Configuração da animação (Scroll) */
+    animation: marquee-scroll 15s linear infinite;
     
     /* Esta linha é o segredo: faz o letreiro começar parado */
     animation-play-state: paused; 
 }
 
-
-/* Animação que desloca exatamente metade (uma cópia) e reseta sem dar tranco */
-@keyframes scroll-right-to-left {
+/* O efeito de movimento do scroll */
+@keyframes marquee-scroll {
     0% {
         transform: translate3d(0, 0, 0);
     }
@@ -151,3 +155,4 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
         transform: translate3d(-100%, 0, 0);
     }
 }
+
