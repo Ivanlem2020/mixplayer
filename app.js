@@ -605,41 +605,60 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     
     function play() {
+    // 1. Se o áudio não foi inicializado ainda, inicializa
+    if (!audioCtx) {
         inicializarAudio();
-        
-        if (!pastaAtual || pastaAtual === "") {
-            const pastas = Object.keys(biblioteca);
-            if (pastas.length > 0) {
-                pastaAtual = pastas[0];
-                indiceMusicaAtual = 0;
-                if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
-                renderizarPastas();
-                renderizarPlaylist();
-                prepararEMandarPlay(0);
-                return;
-            }
-        } else if (indiceMusicaAtual === -1) {
-            const musicas = biblioteca[pastaAtual];
-            if (musicas && musicas.length > 0) {
-                prepararEMandarPlay(0);
-                return;
-            }
-        }
-
-        if (!audioHtml) return;
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        
-        audioHtml.play().then(() => {
-            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
-        }).catch(() => {});
-        
-        if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
-        
-        const marquees = document.querySelectorAll('.marquee-text');
-        marquees.forEach(marquee => {
-            marquee.style.animationPlayState = 'running';
-        });
     }
+
+    if (!pastaAtual || pastaAtual === "") {
+        const pastas = Object.keys(biblioteca);
+        if (pastas.length > 0) {
+            pastaAtual = pastas[0];
+            indiceMusicaAtual = 0;
+            if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
+            renderizarPastas();
+            renderizarPlaylist();
+            prepararEMandarPlay(0);
+            return;
+        }
+    } else if (indiceMusicaAtual === -1) {
+        const musicas = biblioteca[pastaAtual];
+        if (musicas && musicas.length > 0) {
+            prepararEMandarPlay(0);
+            return;
+        }
+    }
+
+    // CORREÇÃO: Se veio do histórico do localForage, recarrega o src para o Web Audio API capturar o som corretamente
+    if (audioHtml && !audioHtml.src && urlMusicaAtual) {
+        audioHtml.src = urlMusicaAtual;
+        audioHtml.load();
+    } else if (audioHtml && audioHtml.src && audioCtx && sourceNode) {
+        // Força o gatilho caso o estado do contexto precise de um "refresh"
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    if (!audioHtml) return;
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    
+    audioHtml.play().then(() => {
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
+    }).catch((err) => {
+        // Se falhar por falta de interação prévia, tenta recarregar a faixa
+        console.log("Ajustando áudio do histórico:", err);
+        if (indiceMusicaAtual !== -1) {
+            prepararEMandarPlay(indiceMusicaAtual);
+        }
+    });
+    
+    if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+    
+    const marquees = document.querySelectorAll('.marquee-text');
+    marquees.forEach(marquee => {
+        marquee.style.animationPlayState = 'running';
+    });
+}
+
 
 
     function pause() {
