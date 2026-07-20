@@ -219,6 +219,39 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 renderizarPastas();
                 renderizarPlaylist();
+
+                // ALTERAÇÃO: Tenta carregar o último histórico salvo no LocalForage assim que monta as listas
+                if (typeof localforage !== 'undefined') {
+                    Promise.all([
+                        localforage.getItem('mixplayer_ultima_pasta'),
+                        localforage.getItem('mixplayer_ultimo_indice')
+                    ]).then(([pastaSalva, indiceSalvo]) => {
+                        if (pastaSalva && biblioteca[pastaSalva] && indiceSalvo !== null) {
+                            const musicasDaPasta = biblioteca[pastaSalva];
+                            if (indiceSalvo >= 0 && indiceSalvo < musicasDaPasta.length) {
+                                // Aplica na memória em silêncio (Sem disparar o auto-play irritante)
+                                pastaAtual = pastaSalva;
+                                indiceMusicaAtual = indiceSalvo;
+                                const musica = musicasDaPasta[indiceMusicaAtual];
+                                
+                                // Alimenta o design
+                                if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
+                                if (trackTitleUi) trackTitleUi.textContent = musica.name;
+                                
+                                if (urlMusicaAtual) URL.revokeObjectURL(urlMusicaAtual);
+                                urlMusicaAtual = URL.createObjectURL(musica.data);
+                                if (audioHtml) {
+                                    audioHtml.src = urlMusicaAtual;
+                                    audioHtml.load();
+                                }
+                                
+                                // Pinta de verde na interface a música resgatada
+                                renderizarPastas();
+                                renderizarPlaylist();
+                            }
+                        }
+                    }).catch(err => console.error("Erro ao recuperar histórico:", err));
+                }
             }
         };
     }
@@ -280,7 +313,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 eqFilter = audioCtx.createBiquadFilter();
                 eqFilter.type = 'peaking';
                 eqFilter.frequency.setValueAtTime(1000, audioCtx.currentTime);
-                eqFilter.gain.setValueAtTime(0, audioCtx.currentTime); // <--- Começa em 0 (Som Original, sem alteração)
+                eqFilter.gain.setValueAtTime(0, audioCtx.currentTime); 
 
                 // NOVO: Nós de áudio para o Efeito Eco (Delay)
                 delayNode = audioCtx.createDelay();
@@ -364,23 +397,16 @@ window.addEventListener('DOMContentLoaded', () => {
             
             if (trackTitleUi) trackTitleUi.textContent = "Carregando pasta...";
             
-            // OBRIGATÓRIO: Substitua o bloco do 'for' dentro do fileInput.addEventListener
             for (let file of files) {
                 if (file.name.toLowerCase().endsWith('.mp3')) {
-                    // Pega o caminho completo (ex: Music/Rio Negro/musica.mp3)
                     const pathParts = file.webkitRelativePath.split('/');
-                    
                     let nomePasta = "Pasta Raiz";
                     
-                    // Se houver mais de uma pasta (ex: Music/Rio Negro)
                     if (pathParts.length > 1) {
-                        // Se a primeira pasta for "Music" ou "Musica", usamos a próxima
                         const primeiraPasta = pathParts[0].toLowerCase();
                         if (primeiraPasta === "music" || primeiraPasta === "musica") {
-                            // Se tiver mais de uma, pega o nome do artista (ex: Rio Negro)
                             nomePasta = pathParts.length > 2 ? pathParts[1] : pathParts[0];
                         } else {
-                            // Caso contrário, usa a primeira mesmo
                             nomePasta = pathParts[0];
                         }
                     }
@@ -454,7 +480,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 clickArea.style.color = '#2ed573'; 
                 clickArea.style.fontWeight = 'bold';
                 
-                // CORREÇÃO: Texto duplicado para o efeito de repetição infinita sem espaço em branco
                 const textoExibicao = `${nomePasta} (${biblioteca[nomePasta].length})`;
                 clickArea.innerHTML = `
                     <i class="fa-solid fa-folder-open" style="margin-right:8px; color: #2ed573; z-index: 2; background: inherit; padding-right: 4px;"></i> 
@@ -521,7 +546,6 @@ window.addEventListener('DOMContentLoaded', () => {
             clickArea.onclick = () => prepararEMandarPlay(index);
             div.appendChild(clickArea);
 
-            // ADICIONADO: Se for a música tocando agora, rola a lista até ela
             if (indiceMusicaAtual === index) {
                 setTimeout(() => {
                     div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -559,6 +583,12 @@ window.addEventListener('DOMContentLoaded', () => {
         indiceMusicaAtual = index;
         const musica = musicas[indiceMusicaAtual];
         
+        // ALTERAÇÃO: Salva a pasta e o índice atuais no LocalForage sempre que rodar um som
+        if (typeof localforage !== 'undefined') {
+            localforage.setItem('mixplayer_ultima_pasta', pastaAtual);
+            localforage.setItem('mixplayer_ultimo_indice', index);
+        }
+
         if (trackTitleUi) trackTitleUi.textContent = musica.name;
         
         if (musica.data) {
@@ -575,10 +605,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     
     function play() {
-        // CORREÇÃO: Garante que os filtros e o contexto de áudio sejam criados ANTES de puxar a música
         inicializarAudio();
-
-        // Lógica de play automático que já tínhamos feito
+        
         if (!pastaAtual || pastaAtual === "") {
             const pastas = Object.keys(biblioteca);
             if (pastas.length > 0) {
@@ -598,7 +626,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Se já passou pelas verificações acima, continua o play normal
         if (!audioHtml) return;
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         
@@ -621,7 +648,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
         if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
         
-        // CORREÇÃO: Pega TODAS as cópias do texto e congela juntas
         const marquees = document.querySelectorAll('.marquee-text');
         marquees.forEach(marquee => {
             marquee.style.animationPlayState = 'paused';
@@ -668,7 +694,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         pastaAtual = nomesPastas[proximoIndicePasta];
         if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
-        // ADICIONADO: Atualiza a lista visual para pintar a nova pasta de verde
         renderizarPastas();
         prepararEMandarPlay(0);
     }
@@ -689,7 +714,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         pastaAtual = nomesPastas[proximoIndicePasta];
         if (folderTitleUi) folderTitleUi.textContent = pastaAtual.toUpperCase();
-        // ADICIONADO: Atualiza a lista visual para pintar a nova pasta de verde
         renderizarPastas();
         prepararEMandarPlay(0);
     }
@@ -895,12 +919,9 @@ window.addEventListener('DOMContentLoaded', () => {
 let eventoInstalacao = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Impede que o navegador mostre aquela barra padrão feia lá embaixo
     e.preventDefault();
-    // Salva o evento para usarmos quando o usuário clicar no botão
     eventoInstalacao = e;
 
-    // Checa se o usuário já recusou a instalação nas últimas 24 horas
     const ultimaRecusa = localStorage.getItem('mixplayer_recusa_instalacao');
     const agora = Date.now();
     const umDiaEmMilissegundos = 24 * 60 * 60 * 1000;
@@ -918,11 +939,9 @@ function exibirModalInstalacao() {
     if (modalInstalar && btnInstalar && btnDepoisInstalar) {
         modalInstalar.style.display = 'flex';
 
-        // Clique no botão "Instalar Agora"
         btnInstalar.onclick = () => {
             modalInstalar.style.display = 'none';
             if (eventoInstalacao) {
-                // Dispara o prompt oficial do sistema (Android/Chrome)
                 eventoInstalacao.prompt();
                 eventoInstalacao.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
@@ -933,10 +952,8 @@ function exibirModalInstalacao() {
             }
         };
 
-        // Clique no botão "Agora não"
         btnDepoisInstalar.onclick = () => {
             modalInstalar.style.display = 'none';
-            // Salva o momento para ocultar por 24 horas
             localStorage.setItem('mixplayer_recusa_instalacao', Date.now());
         };
     }
