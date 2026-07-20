@@ -66,33 +66,63 @@
             <div id="playlist" class="neumorphic-list" style="display: none;"></div>
         </div>
 
-        <div id="page-mixer" class="app-page">
-            <div class="mixer-title">
-                <h3>EQUALIZADOR MASTER</h3>
-                <p>Ajuste os parâmetros de áudio em tempo real</p>
-            </div>
-            
-            <div class="mixer-board-full">
-                <div class="control-rack">
-                    <label><span><i class="fa-solid fa-volume-high"></i> VOLUME GERAL</span><span id="vol-lbl">100%</span></label>
-                    <input type="range" id="gain-slider" min="0" max="2" step="0.05" value="1">
-                </div>
-                
-                <div class="control-rack">
-                    <label><span><i class="fa-solid fa-wave-square"></i> REFORÇO DE GRAVES (BASS)</span><span id="bass-lbl">0 dB</span></label>
-                    <input type="range" id="bass-slider" min="-10" max="10" step="1" value="0">
-                </div>
+        <!-- TELA DO MIXER REESTILIZADA -->
+<div id="page-mixer" class="page-container">
+    <div class="mixer-header" style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #2d2d35;">
+        <button id="back-to-player-btn" style="background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; margin-right: 15px;">
+            <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <h2 style="color: #fff; margin: 0; font-size: 20px; font-family: sans-serif;">Efeitos e Mixagem</h2>
+    </div>
 
-                <div class="control-rack">
-                    <label><span><i class="fa-solid fa-bolt"></i> BRILHO DE AGUDOS (TREBLE)</span><span id="treble-lbl">0 dB</span></label>
-                    <input type="range" id="treble-slider" min="-10" max="10" step="1" value="0">
-                </div>
-            </div>
-            
-            <button class="back-player-btn" id="back-to-player-btn">
-                <i class="fa-solid fa-arrow-left"></i> VOLTAR PARA O PLAYER
+    <div class="mixer-content" style="padding: 20px; font-family: sans-serif;">
+        
+        <!-- SEÇÃO 1: MODOS DE SOM (PRESETS) -->
+        <h3 style="color: #a4b0be; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Modos de Som</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px;">
+            <button id="btn-preset-pancadao" class="btn-mix-preset active-preset" style="background: #1e1e24; border: 2px solid #2ed573; color: #2ed573; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-volume-high" style="font-size: 20px;"></i> Pancadão
+            </button>
+            <button id="btn-preset-voz" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-microphone" style="font-size: 20px;"></i> Voz Limpa
+            </button>
+            <button id="btn-preset-balada" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-compact-disc" style="font-size: 20px;"></i> Balada
+            </button>
+            <button id="btn-preset-original" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-music"></i> Original
             </button>
         </div>
+
+        <!-- SEÇÃO 2: EFEITOS DE POTÊNCIA -->
+        <h3 style="color: #a4b0be; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Efeitos de Potência</h3>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Botão Turbo Gain -->
+            <div style="background: #1e1e24; padding: 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #2d2d35;">
+                <div>
+                    <span style="color: #fff; font-weight: bold; display: block; font-size: 15px;">🚀 Turbo Pre-Amp</span>
+                    <small style="color: #747d8c; font-size: 12px;">Dá um soco extra no volume das músicas baixas</small>
+                </div>
+                <button id="btn-turbo" style="background: #2d2d35; border: none; color: #747d8c; width: 50px; height: 26px; border-radius: 13px; cursor: pointer; position: relative; padding: 3px; transition: all 0.3s;">
+                    <div style="background: #fff; width: 20px; height: 20px; border-radius: 50px; transition: all 0.3s; transform: translateX(0);"></div>
+                </button>
+            </div>
+
+            <!-- Botão Efeito Eco/Arena -->
+            <div style="background: #1e1e24; padding: 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #2d2d35;">
+                <div>
+                    <span style="color: #fff; font-weight: bold; display: block; font-size: 15px;">🍻 Efeito Eco (Arena)</span>
+                    <small style="color: #747d8c; font-size: 12px;">Simula o som tocando ao vivo em um show</small>
+                </div>
+                <button id="btn-eco" style="background: #2d2d35; border: none; color: #747d8c; width: 50px; height: 26px; border-radius: 13px; cursor: pointer; position: relative; padding: 3px; transition: all 0.3s;">
+                    <div style="background: #fff; width: 20px; height: 20px; border-radius: 50px; transition: all 0.3s; transform: translateX(0);"></div>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 
 <!-- Substitua a div dock-controls por esta: -->
 <div class="dock-controls">

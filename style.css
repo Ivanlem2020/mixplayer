@@ -156,3 +156,22 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
     }
 }
 
+/* ==========================================
+   SUPORTE DE EXIBIÇÃO PARA A NOVA TELA DO MIXER
+   ========================================== */
+
+/* Esconde o Mixer por padrão ao abrir o app */
+#page-mixer {
+    display: none;
+}
+
+/* Quando o JS colocar a classe '.active', exibe o Mixer com animação */
+#page-mixer.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Força o player a sumir de vez quando não estiver ativo */
+#page-player:not(.active) {
+    display: none !important;
+}

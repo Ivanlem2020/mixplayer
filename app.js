@@ -1,4 +1,3 @@
-
 // ==========================================
 // REGISTRO DO SERVICE WORKER E CONTROLE DE MODAL
 // ==========================================
@@ -106,21 +105,32 @@ window.addEventListener('DOMContentLoaded', () => {
         console.error('Erro ao abrir o banco de dados:', e.target.error);
     };
 
-    // VARIÁVEIS DO MOTOR DE ÁUDIO
-    let audioCtx = null;
-    let audioHtml = null; 
-    let sourceNode = null; 
-    let gainNode = null;
-    let bassFilter = null;
-    let trebleFilter = null; 
-    let volumeInicial = 1;
-    let bassInicial = 0;
-    let trebleInicial = 0; 
+    // ==========================================
+    // VARIÁVEIS DO MOTOR DE ÁUDIO (NÓS PRINCIPAIS)
+    // ==========================================
+    let audioCtx = null;   // O "cérebro" do áudio, gerencia todo o sistema de som
+    let audioHtml = null;  // O elemento de áudio do HTML que toca o arquivo MP3
+    let sourceNode = null; // A fonte de som que interliga o arquivo MP3 ao sistema
+    let gainNode = null;   // O nó de ganho que controla o volume geral do app
+    let volumeInicial = 1; // Guarda o estado atual do volume base do player
 
-    let analyserNode = null;
-    const canvas = document.getElementById('audio-visualizer');
-    let canvasCtx = canvas ? canvas.getContext('2d') : null;
-    let animationFrameId = null;
+    // ==========================================
+    // VARIÁVEIS DOS NOVOS EFEITOS (MESA DE MIXAGEM)
+    // ==========================================
+    let eqFilter = null;   // Filtro central que muda o som (Pancadão, Voz, Balada)
+    let delayNode = null;  // Cria o atraso no som para fazer o efeito de Eco/Show
+    let delayGain = null;  // Controla o volume do Eco (se está alto, baixo ou desligado)
+    let turboAtivo = false;// Guarda se o botão do ganho Turbo está ligado ou desligado
+    let ecoAtivo = false;  // Guarda se o botão do efeito Eco está ligado ou desligado
+ 
+    // ==========================================
+    // VARIÁVEIS DO VISUALIZADOR (ANIMAÇÃO CANVAS)
+    // ==========================================
+    let analyserNode = null; // Analisa as frequências do som em tempo real para o gráfico
+    const canvas = document.getElementById('audio-visualizer'); // O painel onde o gráfico é desenhado
+    let canvasCtx = canvas ? canvas.getContext('2d') : null;    // O "pincel" usado para desenhar no painel
+    let animationFrameId = null; // Guarda a animação do gráfico para poder pausar/rodar
+
 
     // CONTROLE DA BIBLIOTECA
     let biblioteca = {};
@@ -266,22 +276,30 @@ window.addEventListener('DOMContentLoaded', () => {
                 gainNode = audioCtx.createGain();
                 gainNode.gain.setValueAtTime(volumeInicial, audioCtx.currentTime);
 
-                bassFilter = audioCtx.createBiquadFilter();
-                bassFilter.type = 'lowshelf';
-                bassFilter.frequency.setValueAtTime(200, audioCtx.currentTime);
-                bassFilter.gain.setValueAtTime(bassInicial, audioCtx.currentTime);
+                // NOVO: Filtro para os Modos de Som (Inicia no Pancadão)
+                eqFilter = audioCtx.createBiquadFilter();
+                eqFilter.type = 'lowshelf';
+                eqFilter.frequency.setValueAtTime(100, audioCtx.currentTime);
+                eqFilter.gain.setValueAtTime(10, audioCtx.currentTime);
 
-                trebleFilter = audioCtx.createBiquadFilter();
-                trebleFilter.type = 'highshelf';
-                trebleFilter.frequency.setValueAtTime(4000, audioCtx.currentTime); 
-                trebleFilter.gain.setValueAtTime(trebleInicial, audioCtx.currentTime);
+                // NOVO: Nós de áudio para o Efeito Eco (Delay)
+                delayNode = audioCtx.createDelay();
+                delayNode.delayTime.setValueAtTime(0.3, audioCtx.currentTime);
+                delayGain = audioCtx.createGain();
+                delayGain.gain.setValueAtTime(ecoAtivo ? 0.4 : 0.0, audioCtx.currentTime);
 
                 analyserNode = audioCtx.createAnalyser();
                 analyserNode.fftSize = 64; 
 
-                sourceNode.connect(bassFilter);
-                bassFilter.connect(trebleFilter);
-                trebleFilter.connect(analyserNode);
+                // NOVA CONEXÃO: Som passa pelo filtro principal e vai pro analisador (canvas)
+                sourceNode.connect(eqFilter);
+                eqFilter.connect(analyserNode);
+                
+                // Conecta o Eco em paralelo para dar efeito de show
+                eqFilter.connect(delayNode);
+                delayNode.connect(delayGain);
+                delayGain.connect(analyserNode);
+
                 analyserNode.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
@@ -298,6 +316,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+
 
     function configurarMediaSession() {
         if ('mediaSession' in navigator && audioHtml) {
@@ -346,32 +365,32 @@ window.addEventListener('DOMContentLoaded', () => {
             if (trackTitleUi) trackTitleUi.textContent = "Carregando pasta...";
             
             // OBRIGATÓRIO: Substitua o bloco do 'for' dentro do fileInput.addEventListener
-for (let file of files) {
-    if (file.name.toLowerCase().endsWith('.mp3')) {
-        // Pega o caminho completo (ex: Music/Rio Negro/musica.mp3)
-        const pathParts = file.webkitRelativePath.split('/');
-        
-        let nomePasta = "Pasta Raiz";
-        
-        // Se houver mais de uma pasta (ex: Music/Rio Negro)
-        if (pathParts.length > 1) {
-            // Se a primeira pasta for "Music" ou "Musica", usamos a próxima
-            const primeiraPasta = pathParts[0].toLowerCase();
-            if (primeiraPasta === "music" || primeiraPasta === "musica") {
-                // Se tiver mais de uma, pega o nome do artista (ex: Rio Negro)
-                nomePasta = pathParts.length > 2 ? pathParts[1] : pathParts[0];
-            } else {
-                // Caso contrário, usa a primeira mesmo
-                nomePasta = pathParts[0];
+            for (let file of files) {
+                if (file.name.toLowerCase().endsWith('.mp3')) {
+                    // Pega o caminho completo (ex: Music/Rio Negro/musica.mp3)
+                    const pathParts = file.webkitRelativePath.split('/');
+                    
+                    let nomePasta = "Pasta Raiz";
+                    
+                    // Se houver mais de uma pasta (ex: Music/Rio Negro)
+                    if (pathParts.length > 1) {
+                        // Se a primeira pasta for "Music" ou "Musica", usamos a próxima
+                        const primeiraPasta = pathParts[0].toLowerCase();
+                        if (primeiraPasta === "music" || primeiraPasta === "musica") {
+                            // Se tiver mais de uma, pega o nome do artista (ex: Rio Negro)
+                            nomePasta = pathParts.length > 2 ? pathParts[1] : pathParts[0];
+                        } else {
+                            // Caso contrário, usa a primeira mesmo
+                            nomePasta = pathParts[0];
+                        }
+                    }
+                    
+                    adicionarAoBanco(nomePasta, file.name, file);
+                } 
+                else if (file.name.toLowerCase().endsWith('.zip')) {
+                    await carregarZip(file);
+                }
             }
-        }
-        
-        adicionarAoBanco(nomePasta, file.name, file);
-    } 
-    else if (file.name.toLowerCase().endsWith('.zip')) {
-        await carregarZip(file);
-    }
-}
 
             
             if (trackTitleUi) trackTitleUi.textContent = "Pasta importada!";
@@ -415,7 +434,7 @@ for (let file of files) {
         biblioteca[nomePasta].push(novaMusica);
     }
     
-        function renderizarPastas() {
+    function renderizarPastas() {
         if (!folderContainer) return;
         folderContainer.innerHTML = '';
         Object.keys(biblioteca).forEach(nomePasta => {
@@ -555,7 +574,11 @@ for (let file of files) {
         play();
     }
     
-        function play() {
+    function play() {
+        // CORREÇÃO: Garante que os filtros e o contexto de áudio sejam criados ANTES de puxar a música
+        inicializarAudio();
+
+        // Lógica de play automático que já tínhamos feito
         if (!pastaAtual || pastaAtual === "") {
             const pastas = Object.keys(biblioteca);
             if (pastas.length > 0) {
@@ -575,7 +598,7 @@ for (let file of files) {
             }
         }
 
-        inicializarAudio();
+        // Se já passou pelas verificações acima, continua o play normal
         if (!audioHtml) return;
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         
@@ -585,12 +608,12 @@ for (let file of files) {
         
         if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
         
-        // CORREÇÃO: Pega TODAS as cópias do texto e faz andar
         const marquees = document.querySelectorAll('.marquee-text');
         marquees.forEach(marquee => {
             marquee.style.animationPlayState = 'running';
         });
     }
+
 
     function pause() {
         if (!audioHtml) return;
@@ -743,6 +766,77 @@ for (let file of files) {
         canvas.height = canvas.parentElement.clientHeight;
     }
 
+    // ==========================================
+    // PROGRAMAÇÃO DOS NOVOS EFEITOS DO MIXER
+    // ==========================================
+    const btnPancadao = document.getElementById('btn-preset-pancadao');
+    const btnVoz = document.getElementById('btn-preset-voz');
+    const btnBalada = document.getElementById('btn-preset-balada');
+    const btnOriginal = document.getElementById('btn-preset-original');
+    const btnTurbo = document.getElementById('btn-turbo');
+    const btnEco = document.getElementById('btn-eco');
+
+    function resetarBotoesPreset() {
+        [btnPancadao, btnVoz, btnBalada, btnOriginal].forEach(btn => {
+            if (btn) {
+                btn.classList.remove('active-preset');
+                btn.style.border = '2px solid #2d2d35';
+                btn.style.color = '#fff';
+            }
+        });
+    }
+
+    function aplicarPresetEstilo(botao, freq, tipo, ganho) {
+        resetarBotoesPreset();
+        if (botao) {
+            botao.classList.add('active-preset');
+            botao.style.border = '2px solid #2ed573';
+            botao.style.color = '#2ed573';
+        }
+        if (eqFilter && audioCtx) {
+            eqFilter.type = tipo;
+            eqFilter.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            eqFilter.gain.setValueAtTime(ganho, audioCtx.currentTime);
+        }
+    }
+
+    if (btnPancadao) btnPancadao.onclick = () => aplicarPresetEstilo(btnPancadao, 100, 'lowshelf', 10);
+    if (btnVoz) btnVoz.onclick = () => aplicarPresetEstilo(btnVoz, 2500, 'peaking', 8);
+    if (btnBalada) btnBalada.onclick = () => aplicarPresetEstilo(btnBalada, 1000, 'notch', -6);
+    if (btnOriginal) btnOriginal.onclick = () => aplicarPresetEstilo(btnOriginal, 1000, 'peaking', 0);
+
+    if (btnTurbo) {
+        btnTurbo.onclick = () => {
+            turboAtivo = !turboAtivo;
+            const bolinha = btnTurbo.querySelector('div');
+            if (turboAtivo) {
+                btnTurbo.style.background = '#2ed573';
+                if (bolinha) bolinha.style.transform = 'translateX(24px)';
+                if (gainNode && audioCtx) gainNode.gain.setValueAtTime(volumeInicial * 1.6, audioCtx.currentTime);
+            } else {
+                btnTurbo.style.background = '#2d2d35';
+                if (bolinha) bolinha.style.transform = 'translateX(0)';
+                if (gainNode && audioCtx) gainNode.gain.setValueAtTime(volumeInicial, audioCtx.currentTime);
+            }
+        };
+    }
+
+    if (btnEco) {
+        btnEco.onclick = () => {
+            ecoAtivo = !ecoAtivo;
+            const bolinha = btnEco.querySelector('div');
+            if (ecoAtivo) {
+                btnEco.style.background = '#00d2d3';
+                if (bolinha) bolinha.style.transform = 'translateX(24px)';
+                if (delayGain && audioCtx) delayGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            } else {
+                btnEco.style.background = '#2d2d35';
+                if (bolinha) bolinha.style.transform = 'translateX(0)';
+                if (delayGain && audioCtx) delayGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+            }
+        };
+    }
+
     function desenharVisualizer() {
         animationFrameId = requestAnimationFrame(desenharVisualizer);
         if (!analyserNode || !canvasCtx || !canvas) return;
@@ -847,4 +941,3 @@ function exibirModalInstalacao() {
         };
     }
 }
-

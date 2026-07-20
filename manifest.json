@@ -3,19 +3,19 @@
   "name": "MixPlayer - Neumorphic Music Experience",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./icon-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "icon-512.png",
+      "src": "./icon-512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
   "start_url": "./index.html",
   "background_color": "#1a1b1f",
-  "theme_color": "#1e2024",
+  "theme_color": "#1a1b1f",
   "display": "standalone",
   "orientation": "portrait"
 }
