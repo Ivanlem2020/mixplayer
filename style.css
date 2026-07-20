@@ -1,14 +1,19 @@
+/* ==========================================================================
+   CONFIGURAÇÕES GLOBAIS E VARIÁVEIS (THEME VARIABELS)
+   ========================================================================== */
 :root {
-    --bg-app: #1a1b1f;
-    --bg-card: #1e2024;
-    --text-main: #e2e8f0;
-    --text-muted: #747d8c;
-    --gradient-primary: linear-gradient(135deg, #ff5e62, #ff9966);
-    --gradient-glow: 0 0 20px rgba(255, 94, 98, 0.4);
+    --bg-app: #1a1b1f;            /* Cor de fundo da tela geral (atrás do celular) */
+    --bg-card: #1e2024;           /* Cor principal do corpo do player e botões */
+    --text-main: #e2e8f0;         /* Cor do texto principal (claro) */
+    --text-muted: #747d8c;        /* Cor do texto secundário/apagado (cinza) */
+    --gradient-primary: linear-gradient(135deg, #ff5e62, #ff9966); /* Degradê laranja/rosa dos botões principais */
+    --gradient-glow: 0 0 20px rgba(255, 94, 98, 0.4); /* Brilho neon ao redor dos botões ativos */
+    /* Sombras do Neumorfismo (Efeito de afundado e efeito de relevo) */
     --shadow-inset: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.05);
     --shadow-out: 5px 5px 12px rgba(0,0,0,0.6), -5px -5px 12px rgba(255,255,255,0.03);
 }
 
+/* Base do corpo da página */
 body {
     font-family: 'Montserrat', sans-serif;
     background-color: var(--bg-app);
@@ -20,6 +25,7 @@ body {
     align-items: center;
 }
 
+/* Moldura que simula o tamanho de um Smartphone */
 .smartphone-container {
     width: 100%;
     max-width: 390px;
@@ -32,51 +38,83 @@ body {
     overflow: hidden;
 }
 
-/* Controle de Telas (Pages) */
-.app-page { display: none; }
-.app-page.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+/* ==========================================================================
+   CONTROLE DE EXIBIÇÃO DE TELAS E ANIMAÇÕES
+   ========================================================================== */
+.app-page { display: none; } /* Esconde as páginas por padrão */
+.app-page.active { display: block; animation: fadeIn 0.3s ease-in-out; } /* Mostra a página ativa com efeito suave */
 
+/* Animação de surgimento gradual (Fade In) vindo um pouco de baixo */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Header */
+/* ==========================================================================
+   CABEÇALHO (HEADER) - ALTERAÇÃO APLICADA AQUI
+   ========================================================================== */
 .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+/* Botões do topo (Adicionar Arquivos / Abrir Mixer) */
 .header-btn {
     width: 42px; height: 42px; border-radius: 50%; background: var(--bg-card); border: none;
     color: var(--text-main); box-shadow: var(--shadow-out); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
 }
+/* Visual das abas de mudança de lista quando estão selecionadas */
 .header-btn.active-tab { color: #ff5e62; box-shadow: var(--shadow-inset); }
 
-/* Visor / Display Retangular */
+/* REGRA ATUALIZADA: Limita e protege o título da pasta contra quebras de layout */
+#current-folder-title {
+    max-width: 200px;            /* Garante espaço fixo para não esmagar os botões laterais */
+    white-space: nowrap;         /* Impede o texto de pular para a linha de baixo */
+    overflow: hidden;            /* Esconde os caracteres que sobrarem */
+    text-overflow: ellipsis;     /* Insere o efeito '...' automaticamente no fim do texto */
+    display: inline-block;       /* Permite a leitura correta das margens e tamanhos */
+    text-align: center;          /* Deixa o nome da pasta centralizado */
+    font-weight: 600; 
+    font-size: 0.9rem; 
+    letter-spacing: 1px;
+}
+
+/* ==========================================================================
+   VISOR DO AUDIO VISUALIZER (ESTILO VINIL)
+   ========================================================================== */
 .art-wrapper { display: flex; justify-content: center; margin: 25px 0; width: 100%; }
 .vinyl-disk { width: 100%; height: 180px; border-radius: 20px; background: #151619; box-shadow: var(--shadow-inset); position: relative; overflow: hidden; }
 #audio-visualizer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; pointer-events: none; }
 
-/* Meta dados e barra */
+/* ==========================================================================
+   TEXTOS DA MÚSICA E BARRA DE PROGRESSO (SLIDER)
+   ========================================================================== */
 .track-meta { text-align: center; margin-bottom: 15px; }
 .track-meta h2 { font-size: 1.2rem; margin: 0 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-meta p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
 .progress-container { margin: 15px 0; padding: 0 5px; }
 .time-stamps { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
 
+/* Barra do progresso da música (Fundo) */
 #progress-slider { -webkit-appearance: none; width: 100%; height: 6px; background: var(--bg-card); border-radius: 3px; box-shadow: var(--shadow-inset); outline: none; cursor: pointer; }
+/* Bolinha arrastável do progresso */
 #progress-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gradient-primary); box-shadow: var(--gradient-glow); cursor: pointer; }
 
-/* Listas Neumórficas */
+/* ==========================================================================
+   LISTAS DE MÚSICAS E PASTAS (NEUMORPHIC LISTS)
+   ========================================================================== */
 .neumorphic-list { background: var(--bg-card); box-shadow: var(--shadow-inset); border-radius: 18px; padding: 10px; max-height: 110px; overflow-y: auto; margin-bottom: 15px; }
+/* Cada linha/música dentro da lista */
 .list-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; margin-bottom: 6px; border-radius: 12px; cursor: pointer; background: var(--bg-card); font-size: 0.9rem; transition: all 0.2s; }
 .list-row:hover, .list-row.active { box-shadow: var(--shadow-out); color: #ff5e62; }
 .row-clickable-area { display: flex; align-items: center; gap: 12px; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Cabeçalho de Ações das Playlists */
+/* Cabeçalho superior interno das playlists */
 .playlist-header-actions { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 8px; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
 .mini-action-btn { background: transparent; border: none; color: #ff5e62; cursor: pointer; font-size: 0.9rem; transition: transform 0.2s; }
 .mini-action-btn:hover { transform: scale(1.1); }
 
-/* Tela do Mixer */
+/* ==========================================================================
+   PAINEL DA TELA DO MIXER
+   ========================================================================== */
 .mixer-title { text-align: center; margin: 20px 0; }
 .mixer-title h3 { margin: 0 0 5px 0; letter-spacing: 1px; color: #ff5e62; }
 .mixer-title p { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
@@ -86,19 +124,27 @@ body {
 .control-rack label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
 .control-rack label i { color: #ff5e62; margin-right: 4px; }
 
+/* Sliders de volume/frequência internos do mixer */
 input[type="range"] { -webkit-appearance: none; width: 100%; height: 8px; background: var(--bg-card); border-radius: 4px; box-shadow: var(--shadow-inset); outline: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--gradient-primary); box-shadow: var(--gradient-glow); cursor: pointer; }
 
+/* Botão de voltar para o Player de dentro do Mixer */
 .back-player-btn { width: 100%; padding: 14px; border-radius: 15px; background: var(--bg-card); border: none; color: var(--text-main); font-weight: 600; font-size: 0.8rem; box-shadow: var(--shadow-out); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .back-player-btn:active { box-shadow: var(--shadow-inset); color: #ff5e62; }
 
-/* Comandos Base Inferiores */
+/* ==========================================================================
+   CONTROLES DO CONTROLLER INFERIOR (DOCK)
+   ========================================================================== */
 .dock-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 15px; }
+/* Botões normais do dock (Voltar pasta, pular, etc) */
 .btn-dock { width: 50px; height: 50px; border-radius: 50%; background: var(--bg-card); border: none; color: var(--text-main); box-shadow: var(--shadow-out); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .btn-dock:active { box-shadow: var(--shadow-inset); }
+/* Botão Play/Pause principal (Maior e com degradê chamativo) */
 .btn-dock.main-action { width: 65px; height: 65px; background: var(--gradient-primary); color: white; box-shadow: var(--gradient-glow), var(--shadow-out); font-size: 1.4rem; }
 
-/* ESTRUTURA DOS MENUS SELETORES (MODAIS INTERNOS) */
+/* ==========================================================================
+   ESTRUTURA DOS POPUPS / MODAIS (ADICIONAR À PLAYLIST)
+   ========================================================================== */
 .modal-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(10, 11, 13, 0.6); backdrop-filter: blur(4px);
@@ -120,58 +166,46 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
 .modal-close-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-card); border: none; color: var(--text-muted); font-weight: 700; font-size: 0.75rem; box-shadow: var(--shadow-out); cursor: pointer; }
 .modal-close-btn:active { box-shadow: var(--shadow-inset); }
 
-/* Campo de Input Customizado para Nova Playlist */
+/* Campo de Input interno para dar nome à nova playlist */
 .modal-input-field { width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-card); border: none; box-shadow: var(--shadow-inset); color: var(--text-main); font-family: inherit; margin-bottom: 20px; box-sizing: border-box; outline: none; }
 .modal-actions-row { display: flex; gap: 10px; }
 .modal-save-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--gradient-primary); border: none; color: white; font-weight: 700; font-size: 0.75rem; box-shadow: var(--gradient-glow); cursor: pointer; }
 
-/* Container que esconde o que passa dos limites da linha */
+/* ==========================================================================
+   ESTRUTURA DE TEXTO EM LETREIRO (MARQUEE)
+   ========================================================================== */
 .marquee-container {
     overflow: hidden;
     white-space: nowrap;
     display: flex;
     width: 100%;
 }
-
-/* O texto que vai se mover. Usamos duas cópias idênticas andando juntas */
 .marquee-text {
     display: inline-block;
     white-space: nowrap;
     padding-right: 2rem;
-    
-    /* Configuração da animação (Scroll) */
     animation: marquee-scroll 15s linear infinite;
-    
-    /* Esta linha é o segredo: faz o letreiro começar parado */
     animation-play-state: paused; 
 }
-
-/* O efeito de movimento do scroll */
 @keyframes marquee-scroll {
-    0% {
-        transform: translate3d(0, 0, 0);
-    }
-    100% {
-        transform: translate3d(-100%, 0, 0);
-    }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
 }
 
-/* ==========================================
+/* ==========================================================================
    SUPORTE DE EXIBIÇÃO PARA A NOVA TELA DO MIXER
-   ========================================== */
+   ========================================================================== */
 
 /* Esconde o Mixer por padrão ao abrir o app */
 #page-mixer {
     display: none;
 }
-
 /* Quando o JS colocar a classe '.active', exibe o Mixer com animação */
 #page-mixer.active {
     display: block;
     animation: fadeIn 0.3s ease-in-out;
 }
-
-/* Força o player a sumir de vez quando não estiver ativo */
+/* Força o player principal a sumir de vez quando o mixer assumir a tela */
 #page-player:not(.active) {
     display: none !important;
 }

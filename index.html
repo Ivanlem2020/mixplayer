@@ -78,21 +78,29 @@
     <div class="mixer-content" style="padding: 20px; font-family: sans-serif;">
         
         <!-- SEÇÃO 1: MODOS DE SOM (PRESETS) -->
-        <h3 style="color: #a4b0be; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Modos de Som</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px;">
-            <button id="btn-preset-pancadao" class="btn-mix-preset active-preset" style="background: #1e1e24; border: 2px solid #2ed573; color: #2ed573; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-volume-high" style="font-size: 20px;"></i> Pancadão
-            </button>
-            <button id="btn-preset-voz" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-microphone" style="font-size: 20px;"></i> Voz Limpa
-            </button>
-            <button id="btn-preset-balada" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-compact-disc" style="font-size: 20px;"></i> Balada
-            </button>
-            <button id="btn-preset-original" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-music"></i> Original
-            </button>
-        </div>
+<h3 style="color: #a4b0be; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Modos de Som</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px;">
+    
+    <!-- ORIGINAL: Agora com active-preset e borda/texto verde -->
+    <button id="btn-preset-original" class="btn-mix-preset active-preset" style="background: #1e1e24; border: 2px solid #2ed573; color: #2ed573; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-music"></i> Original
+    </button>
+    
+    <button id="btn-preset-voz" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-microphone" style="font-size: 20px;"></i> Voz Limpa
+    </button>
+    
+    <button id="btn-preset-balada" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-compact-disc" style="font-size: 20px;"></i> Balada
+    </button>
+    
+    <!-- PANCADÃO: Agora sem a classe active-preset e com borda/texto padrão escuro -->
+    <button id="btn-preset-pancadao" class="btn-mix-preset" style="background: #1e1e24; border: 2px solid #2d2d35; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-volume-high" style="font-size: 20px;"></i> Pancadão
+    </button>
+    
+</div>
+
 
         <!-- SEÇÃO 2: EFEITOS DE POTÊNCIA -->
         <h3 style="color: #a4b0be; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Efeitos de Potência</h3>

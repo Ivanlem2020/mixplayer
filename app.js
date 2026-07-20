@@ -278,9 +278,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 // NOVO: Filtro para os Modos de Som (Inicia no Pancadão)
                 eqFilter = audioCtx.createBiquadFilter();
-                eqFilter.type = 'lowshelf';
-                eqFilter.frequency.setValueAtTime(100, audioCtx.currentTime);
-                eqFilter.gain.setValueAtTime(10, audioCtx.currentTime);
+                eqFilter.type = 'peaking';
+                eqFilter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                eqFilter.gain.setValueAtTime(0, audioCtx.currentTime); // <--- Começa em 0 (Som Original, sem alteração)
 
                 // NOVO: Nós de áudio para o Efeito Eco (Delay)
                 delayNode = audioCtx.createDelay();
